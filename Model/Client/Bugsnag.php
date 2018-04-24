@@ -14,7 +14,7 @@ use Optimlight\Bugsnag\Boot\ExceptionHandler;
  * Class Bugsnag
  * @package Optimlight\Bugsnag\Client
  */
-class Bugsnag extends Abstractum
+class Bugsnag extends AbstractClient
 {
     const APP_TYPE = 'Magento 2.x';
     
@@ -141,15 +141,16 @@ class Bugsnag extends Abstractum
         if (!empty($this->apiKey)) {
             $this->client = \Bugsnag\Client::make($this->apiKey);
             $this->client->getConfig()->setReleaseStage($this->releaseStage());
-            $this->client->getConfig()->setNotifier(self::$severities);
+            $this->client->getConfig()->setNotifier(self::$identification);
             $filters = $this->filterFields();
             if (is_array($filters)) {
                 $this->client->getConfig()->setFilters($filters);
             }
             $this->client->getConfig()->setErrorReportingLevel($this->errorReportingLevel());
-            $this->client->getConfig()->setAppType('Magento 2');
-            // set_error_handler(array($this->client, 'errorHandler'));
-            // set_exception_handler(array($this->client, 'exceptionHandler'));
+            $this->client->getConfig()->setAppType(self::APP_TYPE);
+            // Do not set handler here as in case of "early bird" Magento will overwrite handler.
+            // // set_error_handler(array($this->client, 'errorHandler'));
+            // // set_exception_handler(array($this->client, 'exceptionHandler'));
         }
         return $this->client;
     }
@@ -198,7 +199,7 @@ class Bugsnag extends Abstractum
         }
         $level = 0;
         $severities = explode(',', $notifySeverities);
-        foreach($severities as $severity) {
+        foreach ($severities as $severity) {
             $level |= \Bugsnag\ErrorTypes::getLevelsForSeverity($severity);
         }
         return $level;

@@ -8,6 +8,9 @@
 namespace Optimlight\Bugsnag\Boot;
 
 use Magento\Framework\DataObject;
+use Optimlight\Bugsnag\Model\Client\Bugsnag as BugsnagClient;
+use Optimlight\Bugsnag\Model\VirtualCard as VirtualCard;
+use Optimlight\Bugsnag\Model\InterfaceVirtualCard as InterfaceVirtualCard;
 
 /**
  * Class ExceptionHandler
@@ -23,14 +26,14 @@ use Magento\Framework\DataObject;
 
 class ExceptionHandler extends DataObject
 {
-    const CONFIG_KEY = 'opterr_handler';
+    const CONFIG_KEY = 'opt_handler';
     const CONFIG_SUBKEY_EXCEPTIONS = 'exceptions';
     const CONFIG_SUBKEY_EXCLUSION = 'exclude';
     const CONFIG_SUBKEY_ACTIVE = 'active';
     const CONFIG_SUBKEY_EARLY_BIRD = 'early_bird';
     const VIRTUAL_CARD_TYPE_PREFIX = 'Optimlight\Bugsnag\Model\Card_';
     const CLASS_NAME = __CLASS__;
-    
+
     /**
      * @var mixed
      */
@@ -62,6 +65,7 @@ class ExceptionHandler extends DataObject
         if ($this->isActive()) {
             $this->prepareCards();
             $this->prepareExclusions();
+            $this->registerHandler();
         }
     }
 
@@ -95,7 +99,7 @@ class ExceptionHandler extends DataObject
         if (!Runner::getReadyState()) {
             $config = $this->getEarlyBirdConfig();
             if (is_array($config)) {
-                $client = new Client\Bugsnag($config);
+                $client = new BugsnagClient($config);
                 $card = new VirtualCard('Bugsnag M2 Integration - Early Bird', -1, $client);
                 $this->addCard($card);
             }
@@ -219,10 +223,10 @@ class ExceptionHandler extends DataObject
     {
         $result = false;
         if (!$this->isExcluded($errorNo, $errorStr, $errorFile, $errorLine)) {
-            foreach ($this->_clients as $client) {
-                /** @var \Optimlight\Bugsnag\Model\Client\AbstracClient $client */
+            foreach ($this->cards as $card) {
+                /** @var \Optimlight\Bugsnag\Model\InterfaceVirtualCard $card */
                 $lastError = @error_get_last();
-                $client->execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
+                $card->execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
             }
         }
         if (is_array($this->previousHandler) && count($this->previousHandler)) {

@@ -19,6 +19,15 @@ interface InterfaceVirtualCard
      * @return bool
      */
     public function validate();
+    /**
+     * @param int $errorNo
+     * @param string $errorStr
+     * @param string $errorFile
+     * @param int $errorLine
+     * @return bool
+     * @throws \Exception
+     */
+    public function execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
 
     /**
      * @return AbstractClient

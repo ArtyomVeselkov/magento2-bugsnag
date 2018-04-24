@@ -39,22 +39,29 @@ class VirtualCard implements InterfaceVirtualCard
      * @var null|\Optimlight\Bugsnag\Client\AbstractClient
      */
     public $client = null;
+    /**
+     * @var bool
+     */
+    public $active = true;
 
     /**
      * VirtualCard constructor.
+     *
      * @param string $name
      * @param int $id
      * @param null|\Optimlight\Bugsnag\Model\Client\AbstractClient $client
      * @param string $version
      * @param string $site
+     * @param bool $active
      */
-    public function __construct($name, $id = 0, $client = null, $version = '', $site = '')
+    public function __construct($name, $id = 0, $client = null, $version = '', $site = '', $active = true)
     {
-        $this->name = $name ? is_string($name) : self::DEFAULT_NAME;
+        $this->name = is_string($name) ? $name : self::DEFAULT_NAME;
         $this->version = $version;
         $this->site = $site;
         $this->id = $id + 1;
         $this->client = $client;
+        $this->active = $active;
     }
 
     /**
@@ -62,8 +69,25 @@ class VirtualCard implements InterfaceVirtualCard
      */
     public function validate()
     {
-        $clinet = $this->getClient();
-        return $clinet && is_a($clinet, 'Optimlight\\Bugsnag\\Client\\InterfaceClient');
+        $client = $this->getClient();
+        return $client && is_a($client, 'Optimlight\\Bugsnag\\Model\\Client\\InterfaceClient');
+    }
+
+    /**
+     * @param int $errorNo
+     * @param string $errorStr
+     * @param string $errorFile
+     * @param int $errorLine
+     * @param $lastError
+     * @return bool|void
+     * @throws \Exception
+     */
+    public function execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError)
+    {
+        if (!$this->active) {
+            return ;
+        }
+        $this->client->execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
     }
 
     /**
