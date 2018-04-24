@@ -1,0 +1,28 @@
+{
+    "name": "optimlight/bugsnag",
+    "description": "Yet antoher module for the Magento 2 integration with Bugsnag service.",
+    "license": "MIT",
+    "require": {
+        "php": ">=5.4.0",
+        "magento/framework": "^101.0.0",
+        "ext-curl": "*",
+        "ext-dom": "*",
+        "ext-hash": "*",
+        "ext-openssl": "*",
+        "bugsnag/bugsnag": "^3.0"
+    },
+    "type": "magento2-component",
+    "version": "0.0.0.1",
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Optimlight\\Bugsnag\\": ""
+        }
+    },
+    "extra": {
+        "magento-deploystrategy": "copy"
+    }
+}
+
