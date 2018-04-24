@@ -5,7 +5,9 @@
  *  See LICENSE.txt for license details.
  */
 
-namespace Optimlight\Bugsnag;
+namespace Optimlight\Bugsnag\Model;
+
+use Optimlight\Bugsnag\Model\Client\AbstractClient;
 
 /**
  * Interface InterfaceVirtualCard
@@ -17,4 +19,19 @@ interface InterfaceVirtualCard
      * @return bool
      */
     public function validate();
+
+    /**
+     * @return AbstractClient
+     */
+    public function getClient();
+
+    /**
+     * @return int
+     */
+    public function getId();
+
+    /**
+     * @return string
+     */
+    public function getName();
 }

@@ -5,7 +5,7 @@
  *  See LICENSE.txt for license details.
  */
 
-namespace Optimlight\Bugsnag\Client;
+namespace Optimlight\Bugsnag\Model\Client;
 
 /**
  * Interface InterfaceClient

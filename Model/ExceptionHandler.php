@@ -7,35 +7,37 @@
 
 namespace Optimlight\Bugsnag\Model;
 
+use Magento\Framework\DataObject;
+
 /**
  * Class ExceptionHandler
  * @package Optimlight\Bugsnag\Model
  */
 
-class ExceptionHandler
+/**
+ * @method getExceptions()
+ * @method getExclude()
+ * @method getActive()
+ * @method getEarlyBird()
+ */
+
+class ExceptionHandler extends DataObject
 {
     const CONFIG_KEY = 'opterr_handler';
     const CONFIG_SUBKEY_EXCEPTIONS = 'exceptions';
     const CONFIG_SUBKEY_EXCLUSION = 'exclude';
+    const CONFIG_SUBKEY_ACTIVE = 'active';
+    const CONFIG_SUBKEY_EARLY_BIRD = 'early_bird';
     const CLASS_NAME = __CLASS__;
     
     /**
-     * @var 
+     * @var mixed
      */
     protected $previousHandler;
     /**
-     * @var array 
+     * @var \Optimlight\Bugsnag\InterfaceVirtualCard[]
      */
-    protected $clients = [];
-    /**
-     * @var bool 
-     */
-    protected $active = true;
-    /**
-     * @var array 
-     */
-    protected $cachedConfig = [];
-
+    protected $cards = [];
     /**
      * @var string[]
      */
@@ -54,70 +56,90 @@ class ExceptionHandler
             is_array($config[self::CONFIG_KEY][self::CONFIG_SUBKEY_EXCEPTIONS]) &&
             count($config[self::CONFIG_KEY][self::CONFIG_SUBKEY_EXCEPTIONS])
         ) {
-            $this->cachedConfig = $config[self::CONFIG_KEY][self::CONFIG_SUBKEY_EXCEPTIONS];
-
-        } else {
-            $this->active = false;
+            $this->setData($config[self::CONFIG_KEY][self::CONFIG_SUBKEY_EXCEPTIONS]);
         }
-        $this->checkActivation();
-        $this->prepareClients();
-        $this->prepareExclusions();
-    }
-
-    /**
-     * 
-     */
-    public function prepareExclusions()
-    {
-        if (isset($this->cachedConfig[self::CONFIG_SUBKEY_EXCLUSION]) && is_array($this->cachedConfig[self::CONFIG_SUBKEY_EXCLUSION])) {
-            $this->_excludeFiles = $this->cachedConfig[self::CONFIG_SUBKEY_EXCLUSION];
-        }
-    }
-
-    public function prepareClients()
-    {
-        // prepare clients
-        if (isset($this->cachedConfig['clients']) && is_array($this->cachedConfig['clients'])) {
-            $clients = $this->cachedConfig['clients'];
-            foreach ($clients as $client => $config) {
-                if (isset($this->clientsMap[$client])) {
-                    $clientClass = $this->clientsMap[$client];
-                } else {
-                    $clientClass = $client;
-                }
-                $buffer = null;
-                if (class_exists($clientClass) && is_array($config)) {
-                    try {
-                        $buffer = new $clientClass($config);
-                        if ($buffer && is_a($buffer, 'Optimlight\\Bugsnag\\Client\\AbstractClient')) {
-                            $this->_clients[] = $buffer;
-                        }
-                    } catch (\Exception $exception) {}
-                }
-            }
+        if ($this->isActive()) {
+            $this->prepareCards();
+            $this->prepareExclusions();
         }
     }
 
     /**
      * @return bool
      */
-    public function checkActivation()
+    public function isActive()
     {
-        if (!isset($this->cachedConfig['active']) || !$this->cachedConfig['active']) {
-            $this->active = false;
-        }
-        if ($this->active) {
-            $this->registerHandler();
-        }
-        return $this->active;
+        return $this->getActive();
     }
 
+    /**
+     * @return array
+     */
+    public function getEarlyBirdConfig()
+    {
+        $result = [];
+        $buffer = $this->getEarlyBird();
+        if (is_array($buffer)) {
+            $result = $buffer;
+        }
+        return $result;
+    }
+
+    /**
+     *
+     */
+    public function prepareCards()
+    {
+        // As Magento was not started yet, we create first card "manually".
+        if (!Runner::$magentoReadyFlag) {
+            $config = $this->getEarlyBirdConfig();
+            if (is_array($config)) {
+                $client = new Client\Bugsnag($config);
+                $card = new VirtualCard('Bugsnag M2 Integration - Early Bird', -1, $client);
+                $this->addCard($card);
+            }
+        } else {
+            // TODO Load all virtual cards.
+        }
+    }
+
+    /**
+     * @param InterfaceVirtualCard $card
+     */
+    protected function addCard(InterfaceVirtualCard $card)
+    {
+        if ($card->validate()) {
+            $id = $card->getId();
+            $this->cards[$id] = $card;
+        }
+    }
+
+    /**
+     *
+     */
+    public function prepareExclusions()
+    {
+        $exclusions = $this->getExclude();
+        if (is_array($exclusions)) {
+            $this->excludeFiles = $this->cachedConfig[self::CONFIG_SUBKEY_EXCLUSION];
+        }
+    }
+
+    /**
+     * Check either we should exclude current exception from being logged to the client.
+     *
+     * @param $errorNo
+     * @param $errorStr
+     * @param $errorFile
+     * @param $errorLine
+     * @return bool
+     */
     public function isExcluded($errorNo, $errorStr, $errorFile, $errorLine)
     {
         $result = false;
         // exclude by lines
-        if (isset($this->_excludeFiles[$errorFile])) {
-            $lines = $this->_excludeFiles[$errorFile];
+        if (isset($this->excludeFiles[$errorFile])) {
+            $lines = $this->excludeFiles[$errorFile];
             if (is_array($lines)) {
                 foreach ($lines as $lineRange) {
                     if (is_array($lineRange) && count($lineRange)) {
@@ -137,6 +159,9 @@ class ExceptionHandler
         return $result;
     }
 
+    /**
+     * "Nevalyashka" registration.
+     */
     public function registerHandler()
     {
         $buffer = [null];
@@ -155,9 +180,9 @@ class ExceptionHandler
                 count($buffer) &&
                 !is_a($buffer[0], self::CLASS_NAME)
             ) {
-                $this->_previousHandler = $buffer;
+                $this->previousHandler = $buffer;
             }
-            // here is workaround for strange not settings error_handler for the first time
+            // Here is workaround for strange not settings error_handler for the first time.
             $buffer = set_error_handler([$this, 'customHandleError']);
             $limit--;
         }
@@ -185,9 +210,9 @@ class ExceptionHandler
                 $client->execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
             }
         }
-        if (is_array($this->_previousHandler) && count($this->_previousHandler)) {
-            if (!is_a(@$this->_previousHandler[0], self::CLASS_NAME)) {
-                $result = call_user_func_array($this->_previousHandler, [$errorNo, $errorStr, $errorFile, $errorLine]);
+        if (is_array($this->previousHandler) && count($this->previousHandler)) {
+            if (!is_a(@$this->previousHandler[0], self::CLASS_NAME)) {
+                $result = call_user_func_array($this->previousHandler, [$errorNo, $errorStr, $errorFile, $errorLine]);
             }
         }
         return $result;

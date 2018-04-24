@@ -1,5 +1,5 @@
 {
-    "name": "optimlight/bugsnag",
+    "name": "optimlight/magneto2-bugsnag",
     "description": "Yet antoher module for the Magento 2 integration with Bugsnag service.",
     "license": "MIT",
     "require": {
