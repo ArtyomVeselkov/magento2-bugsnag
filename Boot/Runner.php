@@ -5,7 +5,7 @@
  *  See LICENSE.txt for license details.
  */
 
-namespace Optimlight\Bugsnag\Model;
+namespace Optimlight\Bugsnag\Boot;
 
 /**
  * Class Runner
@@ -26,7 +26,7 @@ class Runner
     /**
      * @var bool
      */
-    public static $magentoReadyFlag = false;
+    protected static $magentoReadyFlag = false;
 
     /**
      * @var null|\Magento\Customer\Model\Session
@@ -102,5 +102,26 @@ class Runner
             }
         }
         return static::$customerSession;
+    }
+
+    /**
+     * @param bool $state
+     * @return bool
+     */
+    public static function changeReadyState($state)
+    {
+        $previous = static::getReadyState();
+        static::$magentoReadyFlag = $state;
+        return $previous;
+    }
+
+    /**
+     * Shows either Magento has been loaded already and it is possible to use it.
+     *
+     * @return bool
+     */
+    public static function getReadyState()
+    {
+        return static::$magentoReadyFlag;
     }
 }

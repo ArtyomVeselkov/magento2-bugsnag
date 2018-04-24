@@ -3,14 +3,24 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
 
     <!-- Identification for remote service(s). -->
-    <virtualType name="Optimlight\Bugsnag\Model\Card" type="Optimlight\Bugsnag\Model\Card">
+    <virtualType name="Optimlight\Bugsnag\Model\Card_Boilerplate" type="Optimlight\Bugsnag\Model\Card">
         <arguments>
             <argument name="name" xsi:type="string">Bugsnag M2 Integration</argument>
             <argument name="version" xsi:type="string">0.0.1</argument>
             <argument name="site" xsi:type="string"><![CDATA[https://github.com/ArtyomVeselkov/magento2-bugsnag]]></argument>
             <argument name="client" xsi:type="object">Optimlight\Bugsnag\Client</argument>
             <argument name="id" xsi:type="number">0</argument>
+            <argument name="active" xsi:type="number">false</argument>
         </arguments>
     </virtualType>
+
+    <!-- Good point to load the rest of cards. -->
+    <type name="Magento\Framework\App\Http">
+        <plugin name="Optimlight\Bugsnag\Plugin\BeforeHttp"
+                type="Optimlight\Bugsnag\Plugin\BeforeHttp"
+                sortOrder="1"
+                disabled="false"
+        />
+    </type>
 
 </config>

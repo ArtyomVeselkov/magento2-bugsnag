@@ -5,7 +5,7 @@
  *  See LICENSE.txt for license details.
  */
 
-namespace Optimlight\Bugsnag\Model;
+namespace Optimlight\Bugsnag\Boot;
 
 use Magento\Framework\DataObject;
 
@@ -28,6 +28,7 @@ class ExceptionHandler extends DataObject
     const CONFIG_SUBKEY_EXCLUSION = 'exclude';
     const CONFIG_SUBKEY_ACTIVE = 'active';
     const CONFIG_SUBKEY_EARLY_BIRD = 'early_bird';
+    const VIRTUAL_CARD_TYPE_PREFIX = 'Optimlight\Bugsnag\Model\Card_';
     const CLASS_NAME = __CLASS__;
     
     /**
@@ -91,7 +92,7 @@ class ExceptionHandler extends DataObject
     public function prepareCards()
     {
         // As Magento was not started yet, we create first card "manually".
-        if (!Runner::$magentoReadyFlag) {
+        if (!Runner::getReadyState()) {
             $config = $this->getEarlyBirdConfig();
             if (is_array($config)) {
                 $client = new Client\Bugsnag($config);
@@ -99,7 +100,21 @@ class ExceptionHandler extends DataObject
                 $this->addCard($card);
             }
         } else {
-            // TODO Load all virtual cards.
+            try {
+                // Try load cards only after Magento is loaded.
+                $om = \Optimlight\Bugsnag\Helper\Common::getObjectManager();
+                if ($om) {
+                    /** @var \Optimlight\Bugsnag\Helper\VirtualClass $helper */
+                    $helper = $om->get('Optimlight\Bugsnag\Helper\VirtualClass');
+                    $cards = $helper->filterVirtualTypes(self::VIRTUAL_CARD_TYPE_PREFIX);
+                    $helper->initVirtualTypes($cards, []);
+                    foreach ($cards as $card) {
+                        $this->addCard($card);
+                    }
+                }
+            } catch (\Exception $exception) {
+                // TODO
+            }
         }
     }
 

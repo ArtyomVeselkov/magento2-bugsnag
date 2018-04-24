@@ -14,5 +14,5 @@ namespace Optimlight\Bugsnag;
 );
 
 try {
-    \Optimlight\Bugsnag\Model\Runner::init();
+    \Optimlight\Bugsnag\Boot\Runner::init();
 } catch (\Exception $exception) {}

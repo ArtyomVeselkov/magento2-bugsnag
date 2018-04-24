@@ -7,8 +7,8 @@
 
 namespace Optimlight\Bugsnag\Model\Client;
 
-use Optimlight\Bugsnag\Model\Runner;
-use Optimlight\Bugsnag\Model\ExceptionHandler;
+use Optimlight\Bugsnag\Boot\Runner;
+use Optimlight\Bugsnag\Boot\ExceptionHandler;
 
 /**
  * Class Bugsnag
