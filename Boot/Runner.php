@@ -1,5 +1,4 @@
 <?php
-
 /**
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
@@ -7,75 +6,74 @@
 
 namespace Optimlight\Bugsnag\Boot;
 
+use Magento\Customer\Model\Session;
+use Optimlight\Bugsnag\Logger\Php as Logger;
+use Optimlight\Bugsnag\Helper\Common as Helper;
+
 /**
  * Class Runner
  * @package Optimlight\Bugsnag\Model
+ *
+ * Class responsible for holding cards and managing exceptions handlers used by Bugsnag client(s).
+ * As it runs before Magento Framework ut couldn't relay on its infrastructure.
  */
-class Runner
+final class Runner
 {
     /**
-     * @var array
+     * Holds content of env.php file.
+     *
+     * @var array|null
      */
-    protected static $magentoConfiguration = null;
+    private static $magentoConfiguration = null;
 
     /**
-     * @var null|ExceptionHandler
+     * Exceptions handler.
+     *
+     * @var ExceptionHandler
      */
-    protected static $exceptionsHandler = null;
+    private static $exceptionsHandler = null;
 
     /**
+     * PHP native logger.
+     *
+     * @var Logger
+     */
+    private static $phpLogger;
+
+    /**
+     * Indicates that Magento's Framework is ready and that we can try get customer's session.
+     *
      * @var bool
      */
-    protected static $magentoReadyFlag = false;
+    private static $magentoReadyFlag = false;
 
     /**
-     * @var null|\Magento\Customer\Model\Session
+     * Customer's session (if present).
+     *
+     * @var Session
      */
     public static $customerSession = null;
 
     /**
-     * 
+     * Main entry point.
      */
     public static function init()
     {
+        static::$phpLogger = new Logger();
         try {
             // Get array from app/etc/env.php.
-            if (static::loadMagentoConfig()) {
+            if (static::getEnvConfiguration()) {
                 static::initHandler();
             }
-        } catch (\Exception $exception) {}
-    }
-
-    /**
-     *
-     */
-    protected static function loadMagentoConfig()
-    {
-        $path = BP . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'env.php';
-        if (file_exists($path)) {
-            static::$magentoConfiguration = require $path;
+        } catch (\Exception $exception) {
+            static::$phpLogger->catchException($exception);
         }
-        return is_array(static::$magentoConfiguration);
     }
 
+
     /**
+     * Get initialized exceptions handler.
      *
-     */
-    protected static function initHandler()
-    {
-        $conifg = static::getMagentoConfiguration();
-        static::$exceptionsHandler = new ExceptionHandler($conifg ? $conifg : []);
-    }
-
-    /**
-     * @return array
-     */
-    public static function getMagentoConfiguration()
-    {
-        return static::$magentoConfiguration;
-    }
-
-    /**
      * @return ExceptionHandler|null
      */
     public static function getExceptionsHandler()
@@ -84,7 +82,9 @@ class Runner
     }
 
     /**
-     * @return \Magento\Customer\Model\Session|null
+     * In case of Magento being loaded -- return current customer's session.
+     *
+     * @return Session|null
      */
     public static function getCustomerSession()
     {
@@ -92,19 +92,24 @@ class Runner
             if (is_null(static::$customerSession)) {
                 try {
                     // ObjectManager is used as we should not request until some conditions met.
-                    $om = \Optimlight\Bugsnag\Helper\Common::getObjectManager();
+                    $om = Helper::getObjectManager();
                     if ($om) {
                         /** @var \Magento\Customer\Model\Session $session */
                         $session = $om->get('Magento\Customer\Model\Session');
                         static::$customerSession = $session;
                     }
-                } catch (\Exception $exception) {}
+                } catch (\Exception $exception) {
+                    static::$phpLogger->catchException($exception);
+                }
             }
         }
         return static::$customerSession;
     }
 
     /**
+     * Change the ready state.
+     * By default is switch to "true" on HTTP request processing.
+     *
      * @param bool $state
      * @return bool
      */
@@ -123,5 +128,41 @@ class Runner
     public static function getReadyState()
     {
         return static::$magentoReadyFlag;
+    }
+
+    /**
+     * Returns true if $magentoConfiguration is populated.
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    private static function getEnvConfiguration()
+    {
+        $path = BP . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'env.php';
+        if (file_exists($path)) {
+            static::$magentoConfiguration = require $path;
+        } else {
+            throw new \Exception(sprintf('Env file "%s" doesn\'t exists.', $path));
+        }
+        return is_array(static::$magentoConfiguration);
+    }
+
+    /**
+     * Initialize custom exceptions handler (also handles Magento native).
+     */
+    private static function initHandler()
+    {
+        $config = static::getMagentoConfiguration();
+        static::$exceptionsHandler = new ExceptionHandler($config ?? []);
+    }
+
+    /**
+     * Get loaded array from env.php file.
+     *
+     * @return array
+     */
+    public static function getMagentoConfiguration()
+    {
+        return static::$magentoConfiguration;
     }
 }

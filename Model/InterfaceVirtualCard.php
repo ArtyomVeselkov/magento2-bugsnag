@@ -1,5 +1,4 @@
 <?php
-
 /**
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
@@ -7,7 +6,7 @@
 
 namespace Optimlight\Bugsnag\Model;
 
-use Optimlight\Bugsnag\Model\Client\AbstractClient;
+use Optimlight\Bugsnag\Model\Client\InterfaceClient;
 
 /**
  * Interface InterfaceVirtualCard
@@ -16,21 +15,32 @@ use Optimlight\Bugsnag\Model\Client\AbstractClient;
 interface InterfaceVirtualCard
 {
     /**
+     * Identifier for JavaScript exceptions' tracking card
+     */
+    const TYPE_JS = 'js';
+
+    /**
+     * Identifier for JavaScript exceptions' tracking card
+     */
+    const TYPE_PHP = 'php';
+
+    /**
      * @return bool
      */
     public function validate();
+
     /**
      * @param int $errorNo
      * @param string $errorStr
      * @param string $errorFile
      * @param int $errorLine
+     * @param $lastError
      * @return bool
-     * @throws \Exception
      */
     public function execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
 
     /**
-     * @return AbstractClient
+     * @return InterfaceClient
      */
     public function getClient();
 
@@ -43,4 +53,30 @@ interface InterfaceVirtualCard
      * @return string
      */
     public function getName();
+
+    /**
+     * @return array
+     */
+    public function getConfig();
+
+    /**
+     * @return string
+     */
+    public function getSecondary();
+
+    /**
+     * @return string
+     */
+    public function getType();
+
+    /**
+     * @return string
+     */
+    public function getApikey();
+
+    /**
+     * @param InterfaceClient $client
+     * @return $this
+     */
+    public function setClient(InterfaceClient $client);
 }

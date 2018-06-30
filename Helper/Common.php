@@ -1,5 +1,4 @@
 <?php
-
 /**
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
@@ -54,8 +53,7 @@ class Common extends AbstractHelper
         $ifNull = null,
         $scope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
         $scopeCode = null
-    )
-    {
+    ) {
         $result = $this->scopeConfig->getValue($path, $scope, $scopeCode);
         return is_null($result) ? $ifNull : $result;
     }

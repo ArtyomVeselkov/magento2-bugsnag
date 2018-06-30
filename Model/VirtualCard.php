@@ -1,5 +1,4 @@
 <?php
-
 /**
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
@@ -7,61 +6,126 @@
 
 namespace Optimlight\Bugsnag\Model;
 
+use Optimlight\Bugsnag\Model\Client\InterfaceClient;
+
 /**
  * Class VirtualCard
  * @package Optimlight\Bugsnag
  */
 class VirtualCard implements InterfaceVirtualCard
 {
-    const DEFAULT_NAME = 'Bugsnag M2 Integration';
+    /**
+     * Default name for all cards.
+     */
+    const DEFAULT_NAME = 'Bugsnag Magento 2.x Integration';
 
     /**
+     * Name of the card.
+     *
      * @var string
      */
     public $name = '';
+
     /**
+     * Site to which belongs card's configuration.
+     *
      * @var string
      */
     public $site = '';
+
     /**
+     * Version of the card's configuration.
+     *
      * @var string
      */
     public $version = '';
+
     /**
-     * @var string[]
-     */
-    public $extra = [];
-    /**
+     * ID of the card. Must be unique.
+     *
      * @var int
      */
     public $id = 0;
+
     /**
-     * @var null|\Optimlight\Bugsnag\Client\AbstractClient
+     * Class used for handling exceptions and errors.
+     *
+     * @var InterfaceClient
      */
     public $client = null;
+
     /**
+     * Is card active.
+     *
      * @var bool
      */
     public $active = true;
+
+    /**
+     * Type of the card.
+     *
+     * @var string
+     */
+    public $type = self::TYPE_PHP;
+
+    /**
+     * Configuration passed to the $client instance.
+     *
+     * @var array
+     */
+    public $config = [];
+
+    /**
+     * Secondary API key. Is optional value.
+     * Example of usage case -- JS card to provide ID for URL of JS script.
+     *
+     * @var string
+     */
+    public $secondary = '';
+
+    /**
+     * API key for the target service.
+     *
+     * @var string
+     */
+    public $apikey = '';
 
     /**
      * VirtualCard constructor.
      *
      * @param string $name
      * @param int $id
-     * @param null|\Optimlight\Bugsnag\Model\Client\AbstractClient $client
+     * @param InterfaceClient $client
      * @param string $version
      * @param string $site
      * @param bool $active
+     * @param string $type
+     * @param array $config
+     * @param string $secondary
+     * @param string $apikey
      */
-    public function __construct($name, $id = 0, $client = null, $version = '', $site = '', $active = true)
-    {
+    public function __construct(
+        $name,
+        $id = 0,
+        InterfaceClient $client = null,
+        $version = '',
+        $site = '',
+        $active = true,
+        $type = self::TYPE_PHP,
+        array $config = [],
+        $secondary = '',
+        $apikey = ''
+    ) {
         $this->name = is_string($name) ? $name : self::DEFAULT_NAME;
         $this->version = $version;
         $this->site = $site;
         $this->id = $id + 1;
         $this->client = $client;
         $this->active = $active;
+        $this->type = $type;
+        $this->secondary = $secondary;
+        $this->apikey = $apikey;
+        $this->config = array_merge(['apikey' => $this->apikey, 'active' => $this->active], $config);
     }
 
     /**
@@ -70,7 +134,7 @@ class VirtualCard implements InterfaceVirtualCard
     public function validate()
     {
         $client = $this->getClient();
-        return $client && is_a($client, 'Optimlight\\Bugsnag\\Model\\Client\\InterfaceClient');
+        return $client && is_a($client, InterfaceClient::class) && $this->active;
     }
 
     /**
@@ -79,7 +143,7 @@ class VirtualCard implements InterfaceVirtualCard
      * @param string $errorFile
      * @param int $errorLine
      * @param $lastError
-     * @return bool|void
+     * @return void
      * @throws \Exception
      */
     public function execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError)
@@ -99,7 +163,7 @@ class VirtualCard implements InterfaceVirtualCard
     }
 
     /**
-     * @return null|\Optimlight\Bugsnag\Client\AbstractClient|Client\AbstractClient
+     * @return InterfaceClient
      */
     public function getClient()
     {
@@ -113,5 +177,46 @@ class VirtualCard implements InterfaceVirtualCard
     {
         return $this->name;
     }
-}
 
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    /**
+     * @return array
+     */
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSecondary()
+    {
+        return $this->secondary;
+    }
+
+    /**
+     * @return string
+     */
+    public function getApikey()
+    {
+        return $this->apikey;
+    }
+
+    /**
+     * @param InterfaceClient $client
+     * @return $this
+     */
+    public function setClient(InterfaceClient $client)
+    {
+        $this->client = $client;
+        return $this;
+    }
+}

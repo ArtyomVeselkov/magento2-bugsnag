@@ -1,5 +1,4 @@
 <?php
-
 /**
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
@@ -7,6 +6,7 @@
 
 namespace Optimlight\Bugsnag\Helper;
 
+use Optimlight\Bugsnag\Model\InterfaceVirtualCard;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\ObjectManager\ConfigInterface;
@@ -18,25 +18,36 @@ use Magento\Framework\ObjectManager\ConfigInterface;
 class VirtualClass extends AbstractHelper
 {
     /**
-     * @var Data
+     * Extension's Helper class.
+     *
+     * @var Common
      */
-    protected $dataHelper;
+    private $dataHelper;
+
     /**
+     * Config class.
+     *
      * @var ConfigInterface
      */
-    protected $config;
+    private $config;
+
     /**
+     * Collected all virtual types from di.xml.
+     *
      * @var array|null
      */
-    protected static $virtualTypes = null;
+    private static $virtualTypes = null;
+
     /**
+     * Collected cards from di.xml
+     *
      * @var array
      */
-    protected static $filteredTypes = [];
+    private static $filteredTypes = [];
 
     /**
      * VirtualClass constructor.
-     * @param Data $dataHelper
+     * @param Common $dataHelper
      * @param ConfigInterface $config
      * @param Context $context
      */
@@ -45,13 +56,15 @@ class VirtualClass extends AbstractHelper
         ConfigInterface $config,
         Context $context
 
-    )
-    {
+    ) {
         parent::__construct($context);
         $this->dataHelper = $dataHelper;
         $this->config = $config;
     }
 
+    /**
+     * @return array|null
+     */
     public function getVirtualTypes()
     {
         if (!is_array(static::$virtualTypes)) {
@@ -70,7 +83,7 @@ class VirtualClass extends AbstractHelper
         $virtualTypes = $this->getVirtualTypes();
         array_filter($virtualTypes, function($virtualTypeClass, $virtualTypeName) use (&$result, $prefix) {
             if (0 === strpos($virtualTypeName, $prefix)) {
-                $result[$virtualTypeName] = null;
+                $result[$virtualTypeName] = $virtualTypeClass;
             }
         }, ARRAY_FILTER_USE_BOTH);
         return $result;
@@ -86,9 +99,20 @@ class VirtualClass extends AbstractHelper
         $objectManager = Common::getObjectManager();
         foreach ($result as $virtualTypeName => &$virtualTypeObject) {
             try {
-                $buffer = $objectManager->get($virtualTypeName, ['data' => $data]);
-                if (is_a($virtualTypeObject, 'Optimlight\\Bugsnag\\InterfaceVirtualCard'))
-                $virtualTypeObject = $buffer;
+                // We do not use @see Optimlight\Bugsnag\Model\InterfaceVirtualCardFactory here.
+                /** @var InterfaceVirtualCard $buffer */
+                $buffer = $objectManager->create($virtualTypeName, ['data' => $data]);
+                if (is_array($buffer->getClient()) && is_array($buffer->getConfig())) {
+                    $clientArray = $buffer->getClient();
+                    // TODO Add additional validation.
+                    if (isset($clientArray['instance']) /*&& is_a($clientArray['instance'], \Optimlight\Bugsnag\Model\Client\InterfaceClient::class)*/) {
+                        $client = $objectManager->create($clientArray['instance'], ['configuration' => $buffer->getConfig()]);
+                        $buffer->setClient($client);
+                    }
+                }
+                if (is_a($buffer, InterfaceVirtualCard::class)) {
+                    $virtualTypeObject = $buffer;
+                }
             } catch (\Exception $exception) {
                 $virtualTypeObject = null;
             }

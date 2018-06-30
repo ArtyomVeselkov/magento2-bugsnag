@@ -1,20 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
+<!--
+/**
+ *  Copyright © 2018 Optimlight. All rights reserved.
+ *  See LICENSE.txt for license details.
+ */
+-->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
 
     <!-- Identification for remote service(s). -->
-    <virtualType name="Optimlight\Bugsnag\Model\Card_Boilerplate" type="Optimlight\Bugsnag\Model\Card">
+    <virtualType name="Optimlight\Bugsnag\Model\Card_Boilerplate" type="Optimlight\Bugsnag\Model\VirtualCard">
         <arguments>
             <argument name="name" xsi:type="string">Bugsnag M2 Integration</argument>
             <argument name="version" xsi:type="string">0.0.1</argument>
             <argument name="site" xsi:type="string"><![CDATA[https://github.com/ArtyomVeselkov/magento2-bugsnag]]></argument>
-            <argument name="client" xsi:type="object">Optimlight\Bugsnag\Client</argument>
+            <argument name="client" xsi:type="object">Optimlight\Bugsnag\Model\Client\Bugsnag</argument>
             <argument name="id" xsi:type="number">0</argument>
-            <argument name="active" xsi:type="number">false</argument>
+            <argument name="active" xsi:type="boolean">false</argument>
+            <argument name="type" xsi:type="string">js</argument>
+            <argument name="secondary" xsi:type="string">--</argument>
+            <argument name="config" xsi:type="array">
+                <item name="severities" xsi:type="string">fatal,error,warning,info</item>
+                <item name="environment" xsi:type="string">local</item>
+            </argument>
         </arguments>
     </virtualType>
 
-    <!-- Good point to load the rest of cards. -->
+    <!-- Entry point to load the rest of cards for requests. -->
     <type name="Magento\Framework\App\Http">
         <plugin name="Optimlight\Bugsnag\Plugin\BeforeHttp"
                 type="Optimlight\Bugsnag\Plugin\BeforeHttp"
@@ -22,5 +33,17 @@
                 disabled="false"
         />
     </type>
+
+    <!-- Entry point to load the rest of cards for cron. -->
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <plugin name="Optimlight\Bugsnag\Plugin\BeforeCommandList"
+                type="Optimlight\Bugsnag\Plugin\BeforeCommandList"
+                sortOrder="1"
+                disabled="false"
+        />
+    </type>
+
+    <!-- Default class for registered cards. -->
+    <preference for="Optimlight\Bugsnag\Model\InterfaceVirtualCard" type="Optimlight\Bugsnag\Model\VirtualCard" />
 
 </config>

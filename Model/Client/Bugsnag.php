@@ -1,5 +1,4 @@
 <?php
-
 /**
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
@@ -9,104 +8,88 @@ namespace Optimlight\Bugsnag\Model\Client;
 
 use Optimlight\Bugsnag\Boot\Runner;
 use Optimlight\Bugsnag\Boot\ExceptionHandler;
+use Magento\Framework\DataObject;
+use Bugsnag\Client;
+use Bugsnag\Configuration;
+use Bugsnag\ErrorTypes;
+use Bugsnag\Report;
 
 /**
  * Class Bugsnag
  * @package Optimlight\Bugsnag\Client
+ *
+ * Properties and methods are defined as protected as class supposed to be inherited by other classes.
  */
 class Bugsnag extends AbstractClient
 {
-    const APP_TYPE = 'Magento 2.x';
-    
     /**
-     * @var string
+     * Application type send to Bugsnag.
      */
-    private static $severities = 'fatal,error';
+    const APP_TYPE = 'Magento 2.x Backend';
 
     /**
+     * Levels of exceptions to be tracked.
+     *
+     * @var string
+     */
+    protected $severities = 'fatal,error';
+
+    /**
+     * ID of the used client / card.
+     * Is not used now. See comments below.
+     *
      * @var array
      */
-    private static $identification = [];
+    protected $identification = [];
 
     /**
-     * @var \Bugsnag\Client|null
+     * Bugsnag client instance.
+     *
+     * @var Client
      */
-    private $client = null;
+    protected $client;
+
+    /**
+     * API key for Bugsnag.
+     *
+     * @var string
+     */
+    protected $apiKey;
 
     /**
      * @var string
      */
-    private $apiKey;
+    protected $notifySeverities;
 
     /**
      * @var string
      */
-    private $notifySeverities;
-
-    /**
-     * @var string
-     */
-    private $environment = 'development';
+    protected $environment = 'development';
 
     /**
      * @var bool
      */
-    private $customerWasSet = false;
+    protected $customerWasSet = false;
 
     /**
      * @var
      */
-    private $filterFields;
+    protected $filterFields;
 
     /**
      * Bugsnag constructor.
      * @param array $configuration
+     * @throws \Exception
      */
-    public function __construct(array $configuration)
+    public function __construct(array $configuration = [])
     {
         parent::__construct($configuration);
-        $apiKey = @$configuration['apikey'];
-        $notifySeverities = isset($configuration['severities']) ? $configuration['severities'] : self::$severities;
-        $filterFields = isset($configuration['filter_fields']) ? $configuration['filter_fields'] : '';
-        $environment = isset($configuration['environment']) ? $configuration['environment'] : 'development';
+        $apiKey = $configuration['apikey'] ?? '';
+        $notifySeverities = $configuration['severities'] ?? $this->severities;
+        $filterFields = $configuration['filter_fields'] ?? '';
+        $environment = $configuration['environment'] ?? 'development';
         $this->initConfiguration($apiKey, $notifySeverities, $filterFields, $environment);
         $this->initBugsnag();
-    }
-
-    /**
-     * @param $apiKey
-     * @param $notifySeverities
-     * @param $filterFields
-     * @param $environment
-     */
-    public function initConfiguration($apiKey, $notifySeverities, $filterFields, $environment)
-    {
-        $this->apiKey = $apiKey;
-        $this->notifySeverities = $notifySeverities;
-        $this->filterFields = $filterFields;
-        is_null($environment) ? : $this->environment = $environment;
-    }
-
-    /**
-     * @param null $apiKey
-     * @param null $config
-     * @return \Bugsnag\Configuration|null
-     */
-    public function generateConfiguration($apiKey = null, $config = null)
-    {
-        if (is_null($apiKey)) {
-            $apiKey = $this->apiKey;
-        }
-        $config = new \Bugsnag\Configuration($apiKey);
-        $config->setReleaseStage($this->releaseStage());
-        $config->setErrorReportingLevel($this->errorReportingLevel());
-        $filters = $this->filterFields();
-        if (is_array($filters)) {
-            $config->setFilters($filters);
-        }
-        $config->setNotifier(self::$identification);
-        $config->setAppType(self::APP_TYPE);
-        return $config;
     }
 
     /**
@@ -118,109 +101,21 @@ class Bugsnag extends AbstractClient
             $apiKey = $this->apiKey;
         }
         if (strlen($this->apiKey) != 32) {
-            throw new \Exception('Invalid length of the API key');
+            throw new \Exception('Invalid length of the API key.');
         }
-        $client = new \Bugsnag\Client($this->generateConfiguration($apiKey));
+        $client = new Client($this->generateConfiguration($apiKey));
         $client->notifyError(
             'BugsnagTest',
             'Testing BugSnag',
-            array('notifier' => self::$severities)
+            ['notifier' => $this->severities]
         );
     }
 
-    /**
-     * @return bool|\Bugsnag\Client|null
-     */
-    public function initBugsnag()
-    {
-        if (!class_exists('Bugsnag\\Client')) {
-            error_log("Bugsnag Error: Couldn't activate Bugsnag Error Monitoring due to missing Bugsnag PHP library!");
-            return false;
-        }
-        // Activate the BugSnag client.
-        if (!empty($this->apiKey)) {
-            $this->client = \Bugsnag\Client::make($this->apiKey);
-            $this->client->getConfig()->setReleaseStage($this->releaseStage());
-            $this->client->getConfig()->setNotifier(self::$identification);
-            $filters = $this->filterFields();
-            if (is_array($filters)) {
-                $this->client->getConfig()->setFilters($filters);
-            }
-            $this->client->getConfig()->setErrorReportingLevel($this->errorReportingLevel());
-            $this->client->getConfig()->setAppType(self::APP_TYPE);
-            // Do not set handler here as in case of "early bird" Magento will overwrite handler.
-            // // set_error_handler(array($this->client, 'errorHandler'));
-            // // set_exception_handler(array($this->client, 'exceptionHandler'));
-        }
-        return $this->client;
-    }
 
     /**
+     * Get client instance.
      *
-     */
-    private function addUserTab()
-    {
-        if (!$this->customerWasSet) {
-            $customerSession = Runner::getCustomerSession();
-            if ($customerSession) {
-                try {
-                    $customer = $customerSession->getCustomer();
-                    $data = [
-                        'customer_id' => $customerSession->getCustomerId(),
-                        'email' => $customer->getEmail(),
-                        'first_name' => $customer->getFirstname(),
-                        'last_name' => $customer->getLastname()
-                    ];
-                    $config = $this->client->getConfig();
-                    $config->setMetaData(['user' => $data], true);
-                    $this->customerWasSet = true;
-                } catch (\Exception $exception) {}
-            }
-        }
-    }
-
-    /**
-     * @return string
-     */
-    private function releaseStage()
-    {
-        return $this->environment;
-    }
-
-    /**
-     * @return int
-     */
-    private function errorReportingLevel()
-    {
-        if (empty($this->notifySeverities)) {
-            $notifySeverities = 'fatal,error';
-        } else {
-            $notifySeverities = $this->notifySeverities;
-        }
-        $level = 0;
-        $severities = explode(',', $notifySeverities);
-        foreach ($severities as $severity) {
-            $level |= \Bugsnag\ErrorTypes::getLevelsForSeverity($severity);
-        }
-        return $level;
-    }
-
-    /**
-     * @return array|bool
-     */
-    private function filterFields()
-    {
-        if ($this->filterFields && is_string($this->filterFields) && strlen($this->filterFields())) {
-            $buffer = array_map('trim', explode('\n', $this->filterFields));
-            if ($buffer && is_array($buffer) && count($buffer) && strlen(@$buffer[0])) {
-                return $buffer;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @return \Bugsnag\Client|null
+     * @return Client
      */
     public function getClient()
     {
@@ -228,6 +123,8 @@ class Bugsnag extends AbstractClient
     }
 
     /**
+     * Main function for tracking exceptions.
+     *
      * @param $errorNo
      * @param $errorStr
      * @param $errorFile
@@ -246,25 +143,167 @@ class Bugsnag extends AbstractClient
         if (Runner::getCustomerSession()) {
             $this->addUserTab();
         }
-        $report = \Bugsnag\Report::fromPHPError($this->client->getConfig(), $errorNo, $errorStr, $errorFile, $errorLine);
+        $report = Report::fromPHPError($this->client->getConfig(), $errorNo, $errorStr, $errorFile, $errorLine);
         $this->postProcessStackFrames($report);
         $this->client->notify($report);
         return false;
     }
 
     /**
-     * @param \Bugsnag\Report $report
+     * @return Client|null
+     * @throws \Exception
      */
-    public function postProcessStackFrames($report)
+    protected function initBugsnag()
     {
-        $map = [
-            __CLASS__ . '::execute',
-            ExceptionHandler::CLASS_NAME . '::customHandleError'
-        ];
-        $limit = 2;
+        if (!class_exists('Bugsnag\\Client')) {
+            throw new \Exception('Error: Couldn\'t activate Bugsnag Error Monitoring due to missing Bugsnag PHP library!');
+        }
+        // Activate the BugSnag client.
+        if (!empty($this->apiKey)) {
+            $this->client = Client::make($this->apiKey);
+            $this->client->getConfig()->setReleaseStage($this->releaseStage());
+            // This option shouldn't be really used until correct value is populated. Specifing wrong value can prevent
+            // errors from being tracked by Bugsnag.
+            // $this->client->getConfig()->setNotifier($this->identification);
+            $filters = $this->filterFields();
+            if (is_array($filters)) {
+                $this->client->getConfig()->setFilters($filters);
+            }
+            $this->client->getConfig()->setErrorReportingLevel($this->errorReportingLevel());
+            $this->client->getConfig()->setAppType(self::APP_TYPE);
+            // Do not set handler here as in case of "early bird" Magento will overwrite handler.
+            // set_error_handler([$this->client, 'errorHandler']);
+            // set_exception_handler([$this->client, 'exceptionHandler']);
+        }
+        return $this->client;
+    }
+
+
+    /**
+     * Set main configuration properties.
+     *
+     * @param string $apiKey
+     * @param string $notifySeverities
+     * @param array $filterFields
+     * @param string $environment
+     */
+    protected function initConfiguration($apiKey, $notifySeverities, $filterFields, $environment)
+    {
+        $this->apiKey = $apiKey;
+        $this->notifySeverities = $notifySeverities;
+        $this->filterFields = $filterFields;
+        is_null($environment) ? : $this->environment = $environment;
+    }
+
+    /**
+     * @param string $apiKey
+     * @return Configuration
+     */
+    protected function generateConfiguration($apiKey = '')
+    {
+        if (is_null($apiKey)) {
+            $apiKey = $this->apiKey;
+        }
+        $config = new Configuration($apiKey);
+        $config->setReleaseStage($this->releaseStage());
+        $config->setErrorReportingLevel($this->errorReportingLevel());
+        $filters = $this->filterFields();
+        if (is_array($filters)) {
+            $config->setFilters($filters);
+        }
+        $config->setNotifier($this->identification);
+        $config->setAppType(self::APP_TYPE);
+        return $config;
+    }
+
+    /**
+     * Add additional tab with user info if present.
+     *
+     */
+    protected function addUserTab()
+    {
+        if (!$this->customerWasSet) {
+            $customerSession = Runner::getCustomerSession();
+            if ($customerSession) {
+                try {
+                    $customer = $customerSession->getCustomer();
+                    if (is_a($customer, DataObject::class)) {
+                        /** @var \Magento\Customer\Api\Data\CustomerInterface $customer */
+                        $data = [
+                            'customer_id' => $customerSession->getCustomerId(),
+                            'email' => $customer->getEmail(),
+                            'first_name' => $customer->getFirstname(),
+                            'last_name' => $customer->getLastname()
+                        ];
+                        $config = $this->client->getConfig();
+                        $config->setMetaData(['user' => $data], true);
+                        $this->customerWasSet = true;
+                    }
+                } catch (\Exception $exception) {
+                    $this->phpLogger->catchException($exception);
+                }
+            }
+        }
+    }
+
+    /**
+     * Return release stage.
+     *
+     * @return string
+     */
+    protected function releaseStage()
+    {
+        return $this->environment;
+    }
+
+    /**
+     * Convert string representation of severities to int mask.
+     *
+     * @return int
+     */
+    protected function errorReportingLevel()
+    {
+        if (empty($this->notifySeverities)) {
+            $notifySeverities = 'fatal,error';
+        } else {
+            $notifySeverities = $this->notifySeverities;
+        }
+        $level = 0;
+        $severities = explode(',', $notifySeverities);
+        foreach ($severities as $severity) {
+            $level |= ErrorTypes::getLevelsForSeverity($severity);
+        }
+        return $level;
+    }
+
+    /**
+     * Get filtering fields.
+     *
+     * @return array|bool
+     */
+    protected function filterFields()
+    {
+        if ($this->filterFields && is_string($this->filterFields) && strlen($this->filterFields())) {
+            $buffer = array_map('trim', explode('\n', $this->filterFields));
+            if ($buffer && is_array($buffer) && count($buffer) && strlen(@$buffer[0])) {
+                return $buffer;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Exclude from trace frames with Bugsnag tracking frames (to make report pure).
+     *
+     * @param Report $report
+     */
+    protected function postProcessStackFrames($report)
+    {
+        $map = $this->getStackFramesFilter();
+        $limit = 3;
         $remove = [];
         $trace = null;
-        if (is_a($report, 'Bugsnag\\Report')) {
+        if (is_a($report, Report::class)) {
             $trace = $report->getStacktrace();
             foreach ($trace->getFrames() as $index => $frame) {
                 if (is_array($frame) && isset($frame['method']) && in_array($frame['method'], $map)) {
@@ -282,5 +321,20 @@ class Bugsnag extends AbstractClient
                 $trace->removeFrame(0);
             }
         }
+    }
+
+    /**
+     * Return array of ['class::method'] entries to be removed from final report.
+     *
+     * @return string[]
+     */
+    protected function getStackFramesFilter()
+    {
+        return [
+            __CLASS__ . '::execute',
+            \Optimlight\Bugsnag\Model\InterfaceVirtualCard::class . '::execute', // TODO Maybe change this to the foreach
+            \Optimlight\Bugsnag\Model\VirtualCard::class . '::execute',
+            ExceptionHandler::class . '::customHandleError'
+        ];
     }
 }

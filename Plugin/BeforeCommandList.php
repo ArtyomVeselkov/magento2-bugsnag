@@ -9,12 +9,13 @@ namespace Optimlight\Bugsnag\Plugin;
 use Optimlight\Bugsnag\Boot\ExceptionHandler;
 use Optimlight\Bugsnag\Boot\Runner;
 use Optimlight\Bugsnag\Helper\Common;
+use Magento\Framework\Console\CommandListInterface;
 
 /**
- * Class BeforeHttp
+ * Class BeforeCommandList
  * @package Optimlight\Bugsnag\Plugin
  */
-class BeforeHttp
+class BeforeCommandList
 {
     const CORE_CONFIG_ENABLED = ''; // TODO
 
@@ -27,6 +28,11 @@ class BeforeHttp
      * @var bool
      */
     private static $enabled = false;
+
+    /**
+     * @var int
+     */
+    private static $calledTimes = 1;
 
     /**
      * BeforeHttp constructor.
@@ -42,15 +48,17 @@ class BeforeHttp
     }
 
     /**
-     * @param $subject
+     * @param CommandListInterface $subject
      */
-    public function beforeLaunch($subject)
+    public function beforeGetCommands($subject)
     {
         if (static::$enabled) {
             $handler = static::$handler;
             if ($handler->isActive()) {
-                $handler->prepareCards();
-                $handler->registerAllHandlers();
+                if (0 < static::$calledTimes--) {
+                    $handler->prepareCards();
+                    $handler->registerAllHandlers();
+                }
             }
         }
     }

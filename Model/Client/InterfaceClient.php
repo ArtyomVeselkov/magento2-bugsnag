@@ -1,5 +1,4 @@
 <?php
-
 /**
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
@@ -18,8 +17,8 @@ interface InterfaceClient
      * @param string $errorStr
      * @param string $errorFile
      * @param int $errorLine
+     * @param $lastError
      * @return bool
-     * @throws \Exception
      */
     public function execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
 }

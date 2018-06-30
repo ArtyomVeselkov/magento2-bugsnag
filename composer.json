@@ -22,7 +22,13 @@
         }
     },
     "extra": {
-        "magento-deploystrategy": "copy"
+        "magento-deploystrategy": "copy",
+        "map": [
+            [
+                "setup/config/autoload/bugsnag.local.php",
+                "../../../setup/config/autoload/bugsnag2.local.php"
+            ]
+        ]
     }
 }
 
