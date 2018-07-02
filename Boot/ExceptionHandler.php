@@ -107,7 +107,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     {
         $result = false;
         // Exclude by lines.
-        if (isset($this->excludeFiles[$errorFile])) {
+        if (isset($this->excludeFiles[$errorFile]) || $this->extendedFileMath($errorFile)) {
             $lines = $this->excludeFiles[$errorFile];
             if (is_array($lines)) {
                 foreach ($lines as $lineRange) {
@@ -126,6 +126,26 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
             }
         }
         return $result;
+    }
+
+    /**
+     * @param string $errorFile
+     * @return bool
+     */
+    private function extendedFileMath(&$errorFile)
+    {
+        if (strlen($errorFile)) {
+            foreach ($this->excludeFiles as $file => $rules) {
+                if (':' === $file[0]) {
+                    $file = substr($file, 1);
+                    if (fnmatch($file, $errorFile)) {
+                        $errorFile = ':' . $file;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -180,9 +200,13 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
                 if (InterfaceVirtualCard::TYPE_PHP !== $card->getType()) {
                     continue;
                 }
+                // Here is a hack. In some cases (for example unexciting class) $errorNo can be "0", that's why set it
+                // to "1".
+                $errorNo = 0 === $errorNo ? \E_ERROR : $errorNo;
                 /** @var InterfaceVirtualCard $card */
                 $lastError = @error_get_last();
                 try {
+                    // If you see this line in Bugsnag, then there is no trace available for this error.
                     $card->execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
                 } catch (\Exception $exception) {
                     $this->phpLogger->catchException(
@@ -194,6 +218,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
         }
         // If there is a fallback handler -- process it also.
         if (
+            isset($this->previousHandlers[self::HANDLER_ERROR]) &&
             is_array($this->previousHandlers[self::HANDLER_ERROR]) &&
             count($this->previousHandlers[self::HANDLER_ERROR])
         ) {
@@ -227,7 +252,11 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
                 }
                 /** @var \Optimlight\Bugsnag\Model\InterfaceVirtualCard $card */
                 $lastError = @error_get_last();
+                // Here is a hack. In some cases (for example unexciting class) $errorNo can be "0", that's why set it
+                // to "1".
+                $errorNo = 0 === $errorNo ? \E_ERROR : $errorNo;
                 try {
+                    // If you see this line in Bugsnag, then there is no trace available for this exception.
                     $card->execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
                 } catch (\Exception $e) {
                     $this->phpLogger->catchException(
@@ -239,6 +268,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
         }
         // If there is a fallback handler -- process it also.
         if (
+            isset($this->previousHandlers[self::HANDLER_EXCEPTION]) &&
             is_array($this->previousHandlers[self::HANDLER_EXCEPTION]) &&
             count($this->previousHandlers[self::HANDLER_EXCEPTION])
         ) {
@@ -381,7 +411,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     {
         $exclusions = $this->getExclude();
         if (is_array($exclusions)) {
-            $this->excludeFiles = $this->cachedConfig[self::CONFIG_SUBKEY_EXCLUSION];
+            $this->excludeFiles = $exclusions;
         }
     }
 

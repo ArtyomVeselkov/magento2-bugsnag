@@ -156,14 +156,12 @@ class Bugsnag extends AbstractClient
     {
         $lastError = @error_get_last();
         if (!is_null($lastError)) {
-            $this->execute(
-                $lastError['type'],
-                $lastError['message'],
-                $lastError['file'],
-                $lastError['line'],
-                true
-            );
-
+            try {
+                // If you see this line in Bugsnag - then on shutdown error was found and there is no trace available.
+                $this->execute($lastError['type'], $lastError['message'], $lastError['file'], $lastError['line'], true);
+            } catch (\Exception $exception) {
+                $this->phpLogger->catchException($exception);
+            }
             $this->client->flush();
         }
     }
