@@ -7,20 +7,21 @@
 namespace Optimlight\Bugsnag\Model;
 
 use Optimlight\Bugsnag\Model\Client\InterfaceClient;
+use Optimlight\Bugsnag\Model\Resolver\Build\BuildInterface;
 
 /**
  * Interface InterfaceVirtualCard
  * @package Optimlight\Bugsnag
  */
-interface InterfaceVirtualCard
+interface InterfaceVirtualCard extends BuildableInterface
 {
     /**
-     * Identifier for JavaScript exceptions' tracking card
+     * Identifier for JavaScript exceptions' tracking card.
      */
     const TYPE_JS = 'js';
 
     /**
-     * Identifier for JavaScript exceptions' tracking card
+     * Identifier for JavaScript exceptions' tracking card.
      */
     const TYPE_PHP = 'php';
 
@@ -79,4 +80,14 @@ interface InterfaceVirtualCard
      * @return $this
      */
     public function setClient(InterfaceClient $client);
+
+    /**
+     * @return BuildInterface
+     */
+    public function getBuild();
+
+    /**
+     * @return void
+     */
+    public function shutdown();
 }

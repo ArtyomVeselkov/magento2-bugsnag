@@ -6,11 +6,13 @@
 
 namespace Optimlight\Bugsnag\Model\Client;
 
+use Optimlight\Bugsnag\Model\BuildableInterface;
+
 /**
  * Interface InterfaceClient
  * @package Optimlight\Bugsnag\Client
  */
-interface InterfaceClient 
+interface InterfaceClient extends BuildableInterface
 {
     /**
      * @param int $errorNo
@@ -21,4 +23,9 @@ interface InterfaceClient
      * @return bool
      */
     public function execute($errorNo, $errorStr, $errorFile, $errorLine, $lastError);
+
+    /**
+     * @return void
+     */
+    public function shutdown();
 }

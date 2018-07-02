@@ -11,6 +11,7 @@ use Optimlight\Bugsnag\Model\VirtualCard;
 use Optimlight\Bugsnag\Model\InterfaceVirtualCard;
 use Optimlight\Bugsnag\Helper\VirtualClass;
 use Optimlight\Bugsnag\Model\Client\Bugsnag as BugsnagClient;
+use Optimlight\Bugsnag\Model\Resolver\Build\BuildInterface;
 use Magento\Framework\DataObject;
 
 /**
@@ -61,6 +62,16 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
      * @var
      */
     private $phpLogger;
+
+    /**
+     * @var bool
+     */
+    private $birdFlewOut = false;
+
+    /**
+     * @var bool
+     */
+    private static $shutdownFlag = false;
 
     /**
      * ExceptionHandler constructor.
@@ -153,6 +164,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     {
         $this->registerErrorHandler();
         $this->registerExceptionHandler();
+        $this->registerShutdownFunction();
     }
 
     /**
@@ -281,32 +293,9 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
         // TODO Probably change logic of repeating execution of this method.
         // As Magento was not started yet, we create first card "manually".
         if (!Runner::getReadyState()) {
-            $config = $this->getEarlyBirdConfig();
-            if (is_array($config)) {
-                try {
-                    $client = new BugsnagClient($config);
-                    $card = new VirtualCard('Bugsnag M2 Integration - Early Bird', -1, $client);
-                    $this->addCard($card);
-                } catch (\Exception $exception) {
-                    $this->phpLogger->catchException($exception, 'Unable to initialize Bugsnag EarlyBird card.');
-                }
-            }
+            $this->prepareEarlyBird();
         } else {
-            try {
-                // Try load cards only after Magento is loaded.
-                $om = \Optimlight\Bugsnag\Helper\Common::getObjectManager();
-                if ($om) {
-                    /** @var VirtualClass $helper */
-                    $helper = $om->get(VirtualClass::class);
-                    $cards = $helper->filterVirtualTypes(self::VIRTUAL_CARD_TYPE_PREFIX);
-                    $helper->initVirtualTypes($cards, []);
-                    foreach ($cards as $card) {
-                        $this->addCard($card);
-                    }
-                }
-            } catch (\Exception $exception) {
-                $this->phpLogger->catchException($exception, 'Unable to initialize Bugsnag cards.');
-            }
+            $this->prepareRegularCards();
         }
     }
 
@@ -319,6 +308,68 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
             $id = $card->getId();
             if ($overwrite || !isset($this->cards[$id])) {
                 $this->cards[$id] = $card;
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private function prepareRegularCards()
+    {
+        try {
+            // Try load cards only after Magento is loaded.
+            $om = \Optimlight\Bugsnag\Helper\Common::getObjectManager();
+            if ($om) {
+                /** @var VirtualClass $helper */
+                $helper = $om->get(VirtualClass::class);
+                $cards = $helper->filterVirtualTypes(self::VIRTUAL_CARD_TYPE_PREFIX);
+                $helper->initVirtualTypes($cards, []);
+                foreach ($cards as $card) {
+                    $this->addCard($card);
+                }
+            }
+        } catch (\Exception $exception) {
+            $this->phpLogger->catchException($exception, 'Unable to initialize Bugsnag cards.');
+        }
+    }
+
+    /**
+     * Create card for early bird manually.
+     */
+    private function prepareEarlyBird()
+    {
+        $config = $this->getEarlyBirdConfig();
+        if (is_array($config) && !$this->birdFlewOut) {
+            try {
+                $build = $config['build_class'] ?? false;
+                $buildConfig = $config['build_config'] ?? false;
+                if (
+                    $build && is_array($buildConfig) && class_exists($build) &&
+                    is_a($build, BuildInterface::class, true)
+                ) {
+                    $build = $build::getInstance($buildConfig);
+                    /** @var BuildInterface $build */
+                    $build->resolve();
+                } else {
+                    $build = null;
+                }
+                $card = VirtualCard::getInstance(
+                    'Bugsnag M2 Integration - Early Bird',
+                    -1,
+                    null,
+                    $build,
+                    VirtualCard::TYPE_PHP,
+                    true,
+                    $config['apikey'] ?? '',
+                    $config
+                );
+                $client = new BugsnagClient($card->getConfig());
+                $card->setClient($client);
+                $this->addCard($card);
+                $this->birdFlewOut = true;
+            } catch (\Exception $exception) {
+                $this->phpLogger->catchException($exception, 'Unable to initialize Bugsnag EarlyBird card.');
             }
         }
     }
@@ -348,5 +399,40 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     private function registerExceptionHandler()
     {
         $this->registerHandler(self::HANDLER_EXCEPTION, 'customHandleException', 'set_exception_handler');
+    }
+
+    /**
+     * Custom listener for the application's shutdown.
+     */
+    private function registerShutdownFunction()
+    {
+        register_shutdown_function([$this, 'customShutdownHandler']);
+    }
+
+    /**
+     * Iterate over all cards.
+     */
+    public function customShutdownHandler()
+    {
+        if (static::$shutdownFlag) {
+            return ;
+        } else {
+            static::$shutdownFlag = true;
+        }
+        foreach ($this->cards as $card) {
+            // Skip non-PHP cards.
+            if (InterfaceVirtualCard::TYPE_PHP !== $card->getType()) {
+                continue;
+            }
+            /** @var \Optimlight\Bugsnag\Model\InterfaceVirtualCard $card */
+            try {
+                $card->shutdown();
+            } catch (\Exception $exception) {
+                $this->phpLogger->catchException(
+                    $exception,
+                    'Unable to call shutdown method for Bugsnag card: ' . $card->getName()
+                );
+            }
+        }
     }
 }

@@ -28,7 +28,7 @@ class Bugsnag extends AbstractClient
     const APP_TYPE = 'Magento 2.x Backend';
 
     /**
-     * Levels of exceptions to be tracked.
+     * Levels of exceptions to be tracked (default).
      *
      * @var string
      */
@@ -72,7 +72,7 @@ class Bugsnag extends AbstractClient
     protected $customerWasSet = false;
 
     /**
-     * @var
+     * @var array
      */
     protected $filterFields;
 
@@ -93,7 +93,7 @@ class Bugsnag extends AbstractClient
     }
 
     /**
-     * @param null $apiKey
+     * @param null|string $apiKey
      * @throws \Exception
      */
     public function fireTestEvent($apiKey = null) {
@@ -101,7 +101,7 @@ class Bugsnag extends AbstractClient
             $apiKey = $this->apiKey;
         }
         if (strlen($this->apiKey) != 32) {
-            throw new \Exception('Invalid length of the API key.');
+            throw new \InvalidArgumentException('Invalid length of the API key.');
         }
         $client = new Client($this->generateConfiguration($apiKey));
         $client->notifyError(
@@ -150,6 +150,25 @@ class Bugsnag extends AbstractClient
     }
 
     /**
+     *
+     */
+    public function shutdown()
+    {
+        $lastError = @error_get_last();
+        if (!is_null($lastError)) {
+            $this->execute(
+                $lastError['type'],
+                $lastError['message'],
+                $lastError['file'],
+                $lastError['line'],
+                true
+            );
+
+            $this->client->flush();
+        }
+    }
+
+    /**
      * @return Client|null
      * @throws \Exception
      */
@@ -174,8 +193,22 @@ class Bugsnag extends AbstractClient
             // Do not set handler here as in case of "early bird" Magento will overwrite handler.
             // set_error_handler([$this->client, 'errorHandler']);
             // set_exception_handler([$this->client, 'exceptionHandler']);
+            $this->setBuild();
         }
         return $this->client;
+    }
+
+    /**
+     * For more info @see https://docs.bugsnag.com/platforms/php/other/#tracking-releases
+     */
+    protected function setBuild()
+    {
+        $repository = $this->rawConfig['build_repository'] ?? null;
+        $revision = $this->rawConfig['build_revision'] ?? null;
+        $provider = $this->rawConfig['build_provider'] ?? null;
+        $builderName = $this->rawConfig['build_builder_name'] ?? null;
+        $this->client->getConfig()->setAppVersion($revision);
+        $this->client->build($repository, $revision, $provider, $builderName);
     }
 
 

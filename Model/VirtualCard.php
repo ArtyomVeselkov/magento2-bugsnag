@@ -7,6 +7,7 @@
 namespace Optimlight\Bugsnag\Model;
 
 use Optimlight\Bugsnag\Model\Client\InterfaceClient;
+use Optimlight\Bugsnag\Model\Resolver\Build\BuildInterface;
 
 /**
  * Class VirtualCard
@@ -91,41 +92,53 @@ class VirtualCard implements InterfaceVirtualCard
     public $apikey = '';
 
     /**
+     * @var BuildInterface|null
+     */
+    public $build = null;
+
+    /**
      * VirtualCard constructor.
-     *
-     * @param string $name
+     * @param $name
      * @param int $id
-     * @param InterfaceClient $client
+     * @param InterfaceClient|null $client
+     * @param BuildInterface|null $build
+     * @param string $type
+     * @param bool $active
+     * @param string $apikey
+     * @param string $secondary
      * @param string $version
      * @param string $site
-     * @param bool $active
-     * @param string $type
      * @param array $config
-     * @param string $secondary
-     * @param string $apikey
      */
     public function __construct(
         $name,
         $id = 0,
         InterfaceClient $client = null,
-        $version = '',
-        $site = '',
-        $active = true,
+        BuildInterface $build = null,
         $type = self::TYPE_PHP,
+        $active = true,
+        $apikey = '',
         array $config = [],
         $secondary = '',
-        $apikey = ''
+        $version = '',
+        $site = ''
     ) {
         $this->name = is_string($name) ? $name : self::DEFAULT_NAME;
         $this->version = $version;
         $this->site = $site;
-        $this->id = $id + 1;
+        $this->id = $id;
         $this->client = $client;
         $this->active = $active;
         $this->type = $type;
         $this->secondary = $secondary;
         $this->apikey = $apikey;
-        $this->config = array_merge(['apikey' => $this->apikey, 'active' => $this->active], $config);
+        $this->build = $build;
+        $this->config = array_merge(
+            [
+                'apikey' => $this->apikey, 'active' => $this->active, 'build_revision' => (string)$build
+            ],
+            $config
+        );
     }
 
     /**
@@ -218,5 +231,32 @@ class VirtualCard implements InterfaceVirtualCard
     {
         $this->client = $client;
         return $this;
+    }
+
+    /**
+     * @return null|BuildInterface
+     */
+    public function getBuild()
+    {
+        return $this->build;
+    }
+
+    /**
+     *
+     */
+    public function shutdown()
+    {
+        if ($this->client) {
+            $this->client->shutdown();
+        }
+    }
+
+    /**
+     * @param mixed ...$arguments
+     * @return InterfaceVirtualCard
+     */
+    public static function getInstance(...$arguments)
+    {
+        return new static(...$arguments);
     }
 }

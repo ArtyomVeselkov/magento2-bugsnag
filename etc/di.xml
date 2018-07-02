@@ -18,10 +18,21 @@
             <argument name="active" xsi:type="boolean">false</argument>
             <argument name="type" xsi:type="string">js</argument>
             <argument name="secondary" xsi:type="string">--</argument>
+            <argument name="build" xsi:type="class">Optimlight\Bugsnag\Model\Resolver\Build\JsonFile\Default</argument>
             <argument name="config" xsi:type="array">
                 <item name="severities" xsi:type="string">fatal,error,warning,info</item>
                 <item name="environment" xsi:type="string">local</item>
             </argument>
+        </arguments>
+    </virtualType>
+
+    <!-- Identification for remote service(s). -->
+    <virtualType name="Optimlight\Bugsnag\Model\Resolver\Build\JsonFile\Default" type="Optimlight\Bugsnag\Model\Resolver\Build\JsonFile">
+        <arguments>
+            <argument name="destination" xsi:type="string">var/bugsnag.build.json</argument>
+            <argument name="type" xsi:type="string">file</argument>
+            <argument name="path_info" xsi:type="string">info\build</argument>
+            <argument name="path_version" xsi:type="string">version</argument>
         </arguments>
     </virtualType>
 

@@ -35,6 +35,15 @@ abstract class AbstractClient implements InterfaceClient
     }
 
     /**
+     * @param mixed ...$arguments
+     * @return AbstractClient
+     */
+    public static function getInstance(...$arguments)
+    {
+        return new static(...$arguments);
+    }
+
+    /**
      * @param int $errorNo
      * @param string $errorStr
      * @param string $errorFile
