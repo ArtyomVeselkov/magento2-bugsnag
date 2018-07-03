@@ -28,4 +28,12 @@ class BugsnagJs extends AbstractClient
     {
         return false;
     }
+
+    /**
+     *
+     */
+    public function shutdown()
+    {
+        return ;
+    }
 }

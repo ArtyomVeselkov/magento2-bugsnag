@@ -45,6 +45,10 @@ class Php implements PhpInterface
         if (strlen(trim($additionalMessage))) {
             $additionalMessage = sprintf('[%s] ', $additionalMessage);
         }
-        error_log($additionalMessage . $exception->getMessage(), $this->errorLogType, $this->errorLogDestination);
+        try {
+            error_log($additionalMessage . $exception->getMessage(), $this->errorLogType, $this->errorLogDestination);
+        } catch (\Exception $exception) {
+            error_log($additionalMessage . $exception->getMessage(), 0);
+        }
     }
 }
