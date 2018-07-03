@@ -18,7 +18,8 @@
             <argument name="active" xsi:type="boolean">false</argument>
             <argument name="type" xsi:type="string">js</argument>
             <argument name="secondary" xsi:type="string">--</argument>
-            <argument name="build" xsi:type="class">Optimlight\Bugsnag\Model\Resolver\Build\JsonFile\Default</argument>
+            <!-- Example of build resolver. -->
+            <!--<argument name="build" xsi:type="object">Optimlight\Bugsnag\Model\Resolver\Build\JsonFile\Default</argument>-->
             <argument name="config" xsi:type="array">
                 <item name="severities" xsi:type="string">fatal,error,warning,info</item>
                 <item name="environment" xsi:type="string">local</item>
