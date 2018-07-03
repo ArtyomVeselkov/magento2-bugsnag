@@ -108,10 +108,10 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
      */
     public function canStart($config)
     {
-        if (isset($config['db']['connection']['default']['password']) && isset($config['db']['connection']['default']['dbname'])) {
+        if (!isset($config['db']['connection']['default']['password']) || !isset($config['db']['connection']['default']['dbname'])) {
             return false;
         }
-        if (PHP_SAPI == 'cli' && isset($_SERVER) && isset($_SERVER['argv']) && in_array($_SERVER['argv'], ['setup:install'])) {
+        if (PHP_SAPI == 'cli' && isset($_SERVER) && isset($_SERVER['argv'][1]) && in_array($_SERVER['argv'][1], ['setup:install', 'sampledata:reset', 'setup:uninstall'])) {
             return false;
         }
         return true;
