@@ -24,6 +24,7 @@ use Magento\Framework\DataObject;
  * @method getExclude()
  * @method getActive()
  * @method getEarlyBird()
+ * @method getLimit()
  */
 
 final class ExceptionHandler extends DataObject implements ExceptionHandlerInterface
@@ -72,6 +73,11 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
      * @var bool
      */
     private static $shutdownFlag = false;
+
+    /**
+     * @var array
+     */
+    private static $limitHash = [];
 
     /**
      * ExceptionHandler constructor.
@@ -146,6 +152,24 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     }
 
     /**
+     * @param $errorNo
+     * @param $errorStr
+     * @param $errorFile
+     * @param $errorLine
+     * @return bool
+     */
+    private function isLimitReached($errorNo, $errorStr, $errorFile, $errorLine)
+    {
+        $hash = md5($errorNo . '|' . $errorStr . '|' . $errorFile . '|' . $errorLine);
+        if (isset(static::$limitHash[$hash]) && $this->getLimit() > static::$limitHash[$hash]) {
+            return true;
+        } else {
+            static::$limitHash[$hash] = (static::$limitHash[$hash] ?? 0) + 1;
+        }
+        return false;
+    }
+
+    /**
      * @param string $errorFile
      * @return bool
      */
@@ -211,7 +235,10 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     {
         $result = false;
         // If current exception (by file/line) is not excluded -- process it.
-        if (!$this->isExcluded($errorNo, $errorStr, $errorFile, $errorLine)) {
+        if (
+            !$this->isExcluded($errorNo, $errorStr, $errorFile, $errorLine) &&
+            !$this->isLimitReached($errorNo, $errorStr, $errorFile, $errorLine)
+        ) {
             foreach ($this->cards as $card) {
                 // Skip non-PHP cards.
                 if (InterfaceVirtualCard::TYPE_PHP !== $card->getType()) {
@@ -261,7 +288,10 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
         $errorFile = $exception->getFile();
         $errorLine = $exception->getLine();
         // If current exception (by file/line) is not excluded -- process it.
-        if (!$this->isExcluded($errorNo, $errorStr, $errorFile, $errorLine)) {
+        if (
+            !$this->isExcluded($errorNo, $errorStr, $errorFile, $errorLine) &&
+            !$this->isLimitReached($errorNo, $errorStr, $errorFile, $errorLine)
+        ) {
             foreach ($this->cards as $card) {
                 // Skip non-PHP cards.
                 if (InterfaceVirtualCard::TYPE_PHP !== $card->getType()) {

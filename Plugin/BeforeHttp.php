@@ -16,8 +16,6 @@ use Optimlight\Bugsnag\Helper\Common;
  */
 class BeforeHttp
 {
-    const CORE_CONFIG_ENABLED = ''; // TODO
-
     /**
      * @var null|ExceptionHandler
      */
@@ -26,7 +24,7 @@ class BeforeHttp
     /**
      * @var bool
      */
-    private static $enabled = false;
+    private static $enabled = true;
 
     /**
      * BeforeHttp constructor.
@@ -36,7 +34,6 @@ class BeforeHttp
     public function __construct(
         Common $helper
     ) {
-        static::$enabled = $helper->getConfigValue(self::CORE_CONFIG_ENABLED, false);
         static::$handler = Runner::getExceptionsHandler();
         Runner::changeReadyState(true);
     }
