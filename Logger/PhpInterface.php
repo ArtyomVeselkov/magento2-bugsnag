@@ -22,7 +22,7 @@ interface PhpInterface
      * Default location of destination logs writing.
      * @see error_log for more information.
      */
-    const DEFAULT_LOG_DESTINATION = BP . DIRECTORY_SEPARATOR . 'var' . DIRECTORY_SEPARATOR . 'log' .
+    const DEFAULT_LOG_DESTINATION = 'var' . DIRECTORY_SEPARATOR . 'log' .
                                     DIRECTORY_SEPARATOR . 'bugsnag.log';
 
 
