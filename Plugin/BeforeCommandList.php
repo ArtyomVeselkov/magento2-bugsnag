@@ -35,7 +35,8 @@ class BeforeCommandList
      * BeforeHttp constructor.
      *
      */
-    public function __construct() {
+    public function __construct()
+    {
         static::$handler = Runner::getExceptionsHandler();
         Runner::changeReadyState(true);
     }

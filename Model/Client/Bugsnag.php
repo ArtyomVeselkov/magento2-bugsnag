@@ -18,7 +18,7 @@ use Bugsnag\Report;
  * Class Bugsnag
  * @package Optimlight\Bugsnag\Client
  *
- * Properties and methods are defined as protected as class supposed to be inherited by other classes.
+ * Properties and methods are defined as protected as class supposed to be inherited from other classes.
  */
 class Bugsnag extends AbstractClient
 {
