@@ -13,6 +13,7 @@ use Bugsnag\Client;
 use Bugsnag\Configuration;
 use Bugsnag\ErrorTypes;
 use Bugsnag\Report;
+use GuzzleHttp\ClientInterface as GuzzleClientInterface;
 
 /**
  * Class Bugsnag
@@ -177,7 +178,9 @@ class Bugsnag extends AbstractClient
         }
         // Activate the BugSnag client.
         if (!empty($this->apiKey)) {
-            $this->client = Client::make($this->apiKey);
+            // We use our make method instead of original.
+            // $this->client = Client::make($this->apiKey);
+            $this->client = $this->makeClient($this->apiKey);
             $this->client->getConfig()->setReleaseStage($this->releaseStage());
             // This option shouldn't be really used until correct value is populated. Specifing wrong value can prevent
             // errors from being tracked by Bugsnag.
@@ -194,6 +197,26 @@ class Bugsnag extends AbstractClient
             $this->setBuild();
         }
         return $this->client;
+    }
+
+    /**
+     * @param string|null $apiKey
+     * @param string|null $endpoint
+     * @param bool $defaults
+     * @param GuzzleClientInterface|null $guzzle
+     * @return Client
+     */
+    protected function makeClient($apiKey = null, $endpoint = null, $defaults = true, $guzzle = null)
+    {
+        $config = new Configuration($apiKey ?: getenv('BUGSNAG_API_KEY'));
+        if (!is_object($guzzle)) {
+            $guzzle = Client::makeGuzzle($endpoint ?: getenv('BUGSNAG_ENDPOINT'));
+        }
+        $client = new Client($config, null, $guzzle);
+        if ($defaults) {
+            $client->registerDefaultCallbacks();
+        }
+        return $client;
     }
 
     /**
