@@ -45,6 +45,7 @@ class ContextFs extends AbstractContext
         if (isset($this->factories[$hash])) {
             return $this->factories[$hash];
         } else {
+            // For more options @see vendor/enqueue/fs/FsConnectionFactory.php:103
             $factory = new FsConnectionFactory($options);
             if ($factory) {
                 $this->factories[$hash] = $factory;

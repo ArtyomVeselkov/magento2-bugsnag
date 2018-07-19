@@ -180,7 +180,7 @@ class Bugsnag extends AbstractClient
         if (!empty($this->apiKey)) {
             // We use our make method instead of original.
             // $this->client = Client::make($this->apiKey);
-            $this->client = $this->makeClient($this->apiKey);
+            $this->client = $this->makeClient($this->apiKey, null, true);
             $this->client->getConfig()->setReleaseStage($this->releaseStage());
             // This option shouldn't be really used until correct value is populated. Specifing wrong value can prevent
             // errors from being tracked by Bugsnag.
@@ -208,15 +208,57 @@ class Bugsnag extends AbstractClient
      */
     protected function makeClient($apiKey = null, $endpoint = null, $defaults = true, $guzzle = null)
     {
+        // 1. Create configuration object.
         $config = new Configuration($apiKey ?: getenv('BUGSNAG_API_KEY'));
+        // 2. Prepare Guzlle object.
         if (!is_object($guzzle)) {
-            $guzzle = Client::makeGuzzle($endpoint ?: getenv('BUGSNAG_ENDPOINT'));
+            $guzzleOptions = isset($this->rawConfig['guzzle_options']) ? $this->rawConfig['guzzle_options'] : [];
+            $endpoint = $endpoint ?: getenv('BUGSNAG_ENDPOINT');
+            $handler = isset($this->rawConfig['guzzle_handler']) ? $this->rawConfig['guzzle_handler'] : null;
+            if (is_callable($handler)) {
+                $guzzleOptions['handler'] = $handler;
+            } elseif(class_exists($handler, true)) {
+                $handler = new $handler($this->rawConfig);
+                $guzzleOptions['handler'] = $handler;
+            }
+            if (isset($this->rawConfig['guzzle_class'])) {
+                $guzzleClass = $this->rawConfig['guzzle_class'];
+                if (\class_exists($this->rawConfig['guzzle_class'])) {
+                    $key = version_compare(GuzzleClientInterface::VERSION, '6') === 1 ? 'base_uri' : 'base_url';
+                    $options[$key] = $endpoint ?: Client::ENDPOINT;
+                    if ($path = $this->getCaBundlePath()) {
+                        $options['verify'] = $path;
+                    }
+                    $guzzle = new $guzzleClass($guzzleOptions);
+                }
+
+            }
+            if (!$guzzle) {
+                $guzzle = Client::makeGuzzle($endpoint, $guzzleOptions);
+            }
         }
+        // 3. Create Bugsnag client object.
         $client = new Client($config, null, $guzzle);
+        // 4. Register default callbacks if required.
         if ($defaults) {
             $client->registerDefaultCallbacks();
         }
+        // Return the client.
         return $client;
+    }
+
+    /**
+     * Get the ca bundle path if one exists.
+     *
+     * @return string|bool
+     */
+    protected function getCaBundlePath()
+    {
+        if (!class_exists(CaBundle::class)) {
+            return false;
+        }
+
+        return realpath(CaBundle::getSystemCaRootBundlePath());
     }
 
     /**

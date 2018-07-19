@@ -90,7 +90,7 @@ class VirtualClass extends AbstractHelper
     }
 
     /**
-     * @param 
+     * @param $result
      * @param array $data
      * @return mixed
      */

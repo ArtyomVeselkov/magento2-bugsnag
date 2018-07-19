@@ -5,7 +5,7 @@
  */
 namespace Optimlight\Bugsnag\Model\Queue\Integrator\Guzzle;
 
-use Optimlight\Bugsnag\Model\Queue\{Client, ClientInterface};
+use Optimlight\Bugsnag\Model\Queue\{ClientInterface, Builder\Client as ClientBuilder};
 use Optimlight\Bugsnag\Logger\Php as Logger;
 use Psr\Http\Message\RequestInterface;
 
@@ -54,11 +54,15 @@ class Handler
      */
     public function __invoke(RequestInterface $request, array $options)
     {
+        // If queue client wasn't created - return.
+        if (!$this->queue) {
+            return ;
+        }
         try {
             $serialized = $this->serializer->serialize($request);
             $array = [
                 'request' => $serialized,
-                'options' => $options
+                'options' => $this->prepareQueueRecord($options)
             ];
             $this->queue->enqueue($array);
         } catch (\Exception $exception) {
@@ -67,12 +71,31 @@ class Handler
     }
 
     /**
+     * @param array $array
+     * @return array
+     */
+    private function prepareQueueRecord($array)
+    {
+        foreach ($array as $key => &$value) {
+            if (is_object($value)) {
+                if (method_exists($value, '__toString')) {
+                    $value = (string)$value;
+                } else {
+                    $value = null;
+                }
+            }
+        }
+        return $array;
+    }
+
+    /**
      * @param $options
-     * @return
+     * @return ClientInterface
      * @throws \Exception
      */
     private function createClient($options)
     {
-        return Client::getInstance([]);
+        $builder = new ClientBuilder();
+        return $builder->build($options);
     }
 }
