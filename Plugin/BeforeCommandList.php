@@ -6,8 +6,7 @@
 
 namespace Optimlight\Bugsnag\Plugin;
 
-use Optimlight\Bugsnag\Boot\ExceptionHandler;
-use Optimlight\Bugsnag\Boot\Runner;
+use Optimlight\Bugsnag\Boot\{ExceptionHandler, Runner};
 use Magento\Framework\Console\CommandListInterface;
 
 /**

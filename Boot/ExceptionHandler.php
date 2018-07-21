@@ -372,6 +372,8 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
         if (!Runner::getReadyState()) {
             $this->prepareEarlyBird();
         } else {
+            // As EarlyBird won't be prepared twice and before Magento launch EB can be not executed -- it is called twice.
+            $this->prepareEarlyBird();
             $this->prepareRegularCards();
         }
     }

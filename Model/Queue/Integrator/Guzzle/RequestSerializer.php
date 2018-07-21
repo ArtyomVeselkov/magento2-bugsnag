@@ -15,6 +15,21 @@ use Psr\Http\Message\RequestInterface;
 class RequestSerializer
 {
     /**
+     * @var bool
+     */
+    private $canGzip = false;
+
+    /**
+     * RequestSerializer constructor.
+     */
+    public function __construct()
+    {
+        if (extension_loaded('zlib')) {
+            $this->canGzip = true;
+        }
+    }
+
+    /**
      * @param RequestInterface $request
      * @return string
      */
@@ -23,7 +38,7 @@ class RequestSerializer
         if ('https' === $request->getUri()->getScheme()) {
             $request = $request->withRequestTarget((string)$request->getUri());
         }
-        return GuzzlePsr7\str($request);
+        return $this->compress(GuzzlePsr7\str($request));
     }
 
     /**
@@ -32,6 +47,38 @@ class RequestSerializer
      */
     public function unserialize($string)
     {
-        return GuzzlePsr7\parse_request($string);
+        return GuzzlePsr7\parse_request($this->uncompress($string));
+    }
+
+    /**
+     * @param $string
+     * @return string
+     */
+    private function compress($string)
+    {
+        if ($this->canGzip && 8192 < strlen($string)) {
+            $string = bin2hex(zlib_encode($string, ZLIB_ENCODING_DEFLATE));
+        }
+        return $string;
+    }
+
+    /**
+     * @param $string
+     * @return string
+     */
+    private function uncompress($string)
+    {
+        if ($this->canGzip && ctype_xdigit($string)) {
+            $string = hex2bin($string);
+            if (PHP_VERSION_ID >= 50400) {
+                $string = zlib_decode($string);
+            } else {
+                // work around issue with gzuncompress & co that do not work with all gzip checksums
+                $string = file_get_contents(
+                    'compress.zlib://data:application/octet-stream;base64,' . base64_encode($string)
+                );
+            }
+        }
+        return $string;
     }
 }

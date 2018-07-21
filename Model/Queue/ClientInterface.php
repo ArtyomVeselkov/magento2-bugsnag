@@ -12,6 +12,16 @@ namespace Optimlight\Bugsnag\Model\Queue;
 interface ClientInterface
 {
     /**
+     * Header used for setting unique ID to distinguish messages each from other.
+     */
+    const HEADER_BUGSNAG_QUEUE_ID = 'bg_queue_id';
+
+    /**
+     * Property which shows that message requires @see json_decode function.
+     */
+    const PROPERTY_JSON_ENCODED = 'bg_queue_json_encoded';
+
+    /**
      * @param mixed $value
      * @return void
      */

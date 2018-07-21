@@ -58,4 +58,16 @@
     <!-- Default class for registered cards. -->
     <preference for="Optimlight\Bugsnag\Model\InterfaceVirtualCard" type="Optimlight\Bugsnag\Model\VirtualCard" />
 
+    <preference for="Optimlight\Bugsnag\Model\Queue\ClientInterface" type="Optimlight\Bugsnag\Model\Queue\Client" />
+
+    <preference for="Optimlight\Bugsnag\Model\Queue\ManagerInterface" type="Optimlight\Bugsnag\Model\Queue\Manager" />
+
+    <preference for="Optimlight\Bugsnag\Model\Queue\ProcessorInterface" type="Optimlight\Bugsnag\Model\Queue\Processor" />
+
+    <preference for="Optimlight\Bugsnag\Model\Queue\RecordMediatorInterface" type="Optimlight\Bugsnag\Model\Queue\RecordMediator" />
+
+    <preference for="Optimlight\Bugsnag\Model\Queue\RecordMediatorFactoryInterface" type="Optimlight\Bugsnag\Model\Queue\RecordMediatorFactory" />
+
+    <preference for="Optimlight\Bugsnag\Model\Queue\Builder\ClientInterface" type="Optimlight\Bugsnag\Model\Queue\Builder\Client" />
+
 </config>

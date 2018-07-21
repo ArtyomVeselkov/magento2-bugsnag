@@ -26,6 +26,8 @@ interface InterfaceVirtualCard extends BuildableInterface
     const TYPE_PHP = 'php';
 
     /**
+     * Checks `active` state and `client` property.
+     *
      * @return bool
      */
     public function validate();

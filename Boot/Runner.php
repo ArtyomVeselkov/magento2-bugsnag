@@ -93,7 +93,7 @@ final class Runner
                 try {
                     // ObjectManager is used as we should not request until some conditions met.
                     $om = Helper::getObjectManager();
-                    if ($om) {
+                    if ($om && static::isAreaSet()) {
                         /** @var \Magento\Customer\Model\Session $session */
                         $session = $om->get('Magento\Customer\Model\Session');
                         static::$customerSession = $session;
@@ -104,6 +104,26 @@ final class Runner
             }
         }
         return static::$customerSession;
+    }
+
+    /**
+     * @return bool
+     */
+    public static function isAreaSet()
+    {
+        if (static::$magentoReadyFlag) {
+            try {
+                $om = Helper::getObjectManager();
+                // We cannot use \Magento\Framework\App\State as it will throw exception in case of not set areaCode.
+                /** @var \Magento\Framework\Config\ScopeInterface $scope */
+                $scope = $om->get('Magento\Framework\Config\ScopeInterface');;
+                $value = $scope->getCurrentScope();
+                return !(!$value || 'primary' === $value);
+            } catch (\Exception $exception) {
+                static::$phpLogger->catchException($exception);
+            }
+        }
+        return false;
     }
 
     /**

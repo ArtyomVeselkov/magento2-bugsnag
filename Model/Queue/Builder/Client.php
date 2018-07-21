@@ -5,7 +5,7 @@
  */
 namespace Optimlight\Bugsnag\Model\Queue\Builder;
 
-use Optimlight\Bugsnag\Model\Queue\{Client as QueueClient, ClientInterface};
+use Optimlight\Bugsnag\Model\Queue\{Client as QueueClient, ClientInterface, Builder\ClientInterface as BuilderInterface};
 use Optimlight\Bugsnag\Model\Queue\Provider\ContextInterface as ContextProviderInterface;
 
 /**
