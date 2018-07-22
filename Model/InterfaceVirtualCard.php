@@ -3,7 +3,6 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Model;
 
 use Optimlight\Bugsnag\Model\Client\InterfaceClient;
@@ -26,6 +25,8 @@ interface InterfaceVirtualCard extends BuildableInterface
     const TYPE_PHP = 'php';
 
     /**
+     * Checks `active` state and `client` property.
+     *
      * @return bool
      */
     public function validate();

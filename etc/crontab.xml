@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *  Copyright © 2018 Optimlight. All rights reserved.
+ *  See LICENSE.txt for license details.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <job name="bugsnag_process_queue" instance="Optimlight\Bugsnag\Model\Cron\Queue" method="execute">
+            <schedule>* * * * *</schedule>
+        </job>
+    </group>
+</config>

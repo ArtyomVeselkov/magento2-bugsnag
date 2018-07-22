@@ -9,7 +9,8 @@
         "ext-dom": "*",
         "ext-hash": "*",
         "ext-openssl": "*",
-        "bugsnag/bugsnag": "^3.0"
+        "bugsnag/bugsnag": "^3.0",
+        "enqueue/fs": "^0.8"
     },
     "type": "magento2-component",
     "version": "0.0.0.1",

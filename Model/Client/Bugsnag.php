@@ -3,22 +3,20 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Model\Client;
 
-use Optimlight\Bugsnag\Boot\Runner;
-use Optimlight\Bugsnag\Boot\ExceptionHandler;
+use Optimlight\Bugsnag\Boot\{Runner, ExceptionHandler};
+use Optimlight\Bugsnag\Helper\CachedFlag;
+use Bugsnag\{Client, Configuration, ErrorTypes, Report};
+use GuzzleHttp\ClientInterface as GuzzleClientInterface;
 use Magento\Framework\DataObject;
-use Bugsnag\Client;
-use Bugsnag\Configuration;
-use Bugsnag\ErrorTypes;
-use Bugsnag\Report;
+use Composer\CaBundle;
 
 /**
  * Class Bugsnag
  * @package Optimlight\Bugsnag\Client
  *
- * Properties and methods are defined as protected as class supposed to be inherited by other classes.
+ * Properties and methods are defined as protected as class supposed to be inherited from other classes.
  */
 class Bugsnag extends AbstractClient
 {
@@ -77,6 +75,11 @@ class Bugsnag extends AbstractClient
     protected $filterFields;
 
     /**
+     * @var CachedFlag
+     */
+    protected $cachedFlag;
+
+    /**
      * Bugsnag constructor.
      * @param array $configuration
      * @throws \Exception
@@ -88,6 +91,7 @@ class Bugsnag extends AbstractClient
         $notifySeverities = $configuration['severities'] ?? $this->severities;
         $filterFields = $configuration['filter_fields'] ?? '';
         $environment = $configuration['environment'] ?? 'development';
+        $this->cachedFlag = new CachedFlag();
         $this->initConfiguration($apiKey, $notifySeverities, $filterFields, $environment);
         $this->initBugsnag();
     }
@@ -177,7 +181,9 @@ class Bugsnag extends AbstractClient
         }
         // Activate the BugSnag client.
         if (!empty($this->apiKey)) {
-            $this->client = Client::make($this->apiKey);
+            // We use our make method instead of original.
+            // $this->client = Client::make($this->apiKey);
+            $this->client = $this->makeClient($this->apiKey, null, true);
             $this->client->getConfig()->setReleaseStage($this->releaseStage());
             // This option shouldn't be really used until correct value is populated. Specifing wrong value can prevent
             // errors from being tracked by Bugsnag.
@@ -197,6 +203,68 @@ class Bugsnag extends AbstractClient
     }
 
     /**
+     * @param string|null $apiKey
+     * @param string|null $endpoint
+     * @param bool $defaults
+     * @param GuzzleClientInterface|null $guzzle
+     * @return Client
+     */
+    protected function makeClient($apiKey = null, $endpoint = null, $defaults = true, $guzzle = null)
+    {
+        // 1. Create configuration object.
+        $config = new Configuration($apiKey ?: getenv('BUGSNAG_API_KEY'));
+        // 2. Prepare Guzlle object.
+        if (!is_object($guzzle)) {
+            $guzzleOptions = isset($this->rawConfig['guzzle_options']) ? $this->rawConfig['guzzle_options'] : [];
+            $endpoint = $endpoint ?: getenv('BUGSNAG_ENDPOINT');
+            $handler = isset($this->rawConfig['guzzle_handler']) ? $this->rawConfig['guzzle_handler'] : null;
+            if (is_callable($handler)) {
+                $guzzleOptions['handler'] = $handler;
+            } elseif(class_exists($handler, true)) {
+                $handler = new $handler($this->rawConfig);
+                $guzzleOptions['handler'] = $handler;
+            }
+            if (isset($this->rawConfig['guzzle_class'])) {
+                $guzzleClass = $this->rawConfig['guzzle_class'];
+                if (\class_exists($this->rawConfig['guzzle_class'])) {
+                    $key = version_compare(GuzzleClientInterface::VERSION, '6') === 1 ? 'base_uri' : 'base_url';
+                    $options[$key] = $endpoint ?: Client::ENDPOINT;
+                    if ($path = $this->getCaBundlePath()) {
+                        $options['verify'] = $path;
+                    }
+                    $guzzle = new $guzzleClass($guzzleOptions);
+                }
+
+            }
+            if (!$guzzle) {
+                $guzzle = Client::makeGuzzle($endpoint, $guzzleOptions);
+            }
+        }
+        // 3. Create Bugsnag client object.
+        $client = new Client($config, null, $guzzle);
+        // 4. Register default callbacks if required.
+        if ($defaults) {
+            $client->registerDefaultCallbacks();
+        }
+        // Return the client.
+        return $client;
+    }
+
+    /**
+     * Get the ca bundle path if one exists.
+     *
+     * @return string|bool
+     */
+    protected function getCaBundlePath()
+    {
+        if (!class_exists(CaBundle::class)) {
+            return false;
+        }
+
+        return realpath(CaBundle::getSystemCaRootBundlePath());
+    }
+
+    /**
      * For more info @see https://docs.bugsnag.com/platforms/php/other/#tracking-releases
      */
     protected function setBuild()
@@ -205,8 +273,13 @@ class Bugsnag extends AbstractClient
         $revision = $this->rawConfig['build_revision'] ?? null;
         $provider = $this->rawConfig['build_provider'] ?? null;
         $builderName = $this->rawConfig['build_builder_name'] ?? null;
-        $this->client->getConfig()->setAppVersion($revision);
-        $this->client->build($repository, $revision, $provider, $builderName);
+        $key = "{$repository}|{$revision}|{$provider}|{$builderName}";
+        $previousBuild = $this->cachedFlag->getFlag('build_key');
+        if (!$previousBuild || $previousBuild != $key) {
+            $this->client->getConfig()->setAppVersion($revision);
+            $this->client->build($repository, $revision, $provider, $builderName);
+            $this->cachedFlag->setFlag('build_key', $key);
+        }
     }
 
 
