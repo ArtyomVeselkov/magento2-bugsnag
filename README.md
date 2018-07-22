@@ -1,4 +1,4 @@
-# The Bugsnag Notifier integration for Magento 2.x backend (PHP) and frontend (JS) 
+# [BETA] The Bugsnag Notifier integration for Magento 2.x backend (PHP) and frontend (JS) 
 ## About
 The Bugsnag featured integration for Magento 2 with early start tracking point of handling exceptions for:
 - HTTP requests;
