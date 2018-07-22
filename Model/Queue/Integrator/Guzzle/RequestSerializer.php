@@ -68,7 +68,8 @@ class RequestSerializer
      */
     private function uncompress($string)
     {
-        if ($this->canGzip && ctype_xdigit($string)) {
+        // We do not really need check the whole string, just a part of it would be enough.
+        if ($this->canGzip && ctype_xdigit(substr($string, 0, 128))) {
             $string = hex2bin($string);
             if (PHP_VERSION_ID >= 50400) {
                 $string = zlib_decode($string);

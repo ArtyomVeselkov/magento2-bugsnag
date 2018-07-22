@@ -149,6 +149,8 @@ class Processor implements ProcessorInterface
     private function executeCallbacks($event, array $arguments = [])
     {
         if (isset($this->callbacks[$event])) {
+            $arguments['event'] = $event;
+            $arguments['processor'] = $this;
             $callbacks = $this->callbacks[$event];
             if (is_array($callbacks)) {
                 foreach ($callbacks as $position => $object) {
@@ -186,11 +188,12 @@ class Processor implements ProcessorInterface
      * It is used as a point when we can acknowledge or reject queue's message.
      *
      * @param $message
+     * @param string|null $index
      * @return \Closure
      */
-    public function getCallableOnStats($message)
+    public function getCallableOnStats($message, $index = null)
     {
-        return function(TransferStats $stats) use ($message) {
+        return function(TransferStats $stats) use ($message, $index) {
             if (
                 $stats->hasResponse() &&
                 isset($message['record']) &&
@@ -209,7 +212,7 @@ class Processor implements ProcessorInterface
                         break;
                 }
             }
-            $this->executeCallbacks('on_stats', ['stats' => $stats, 'message' => $message]);
+            $this->executeCallbacks('on_stats', ['stats' => $stats, 'message' => $message, 'index' => $index]);
         };
     }
 
@@ -220,11 +223,11 @@ class Processor implements ProcessorInterface
     {
         $client = $this->guzzle;
         return function ($messages) use ($client) {
-            foreach ($messages as $message) {
-                yield function() use ($client, $message) {
+            foreach ($messages as $index => $message) {
+                yield function() use ($client, $message, $index) {
                     $request = $message['request'];
                     $options = $message['options'];
-                    $options = $this->populateOptions($options, $message, $client);
+                    $options = $this->populateOptions($options, $message, $client, $index);
                     $request = $this->requestSerializer->unserialize($request);
                     return $this->guzzle->sendAsync($request, $options);
                 };
@@ -236,14 +239,15 @@ class Processor implements ProcessorInterface
      * @param array $options
      * @param array $message
      * @param GuzzleClient $client
+     * @param string|null $index
      * @return array
      */
-    private function populateOptions($options, $message, GuzzleClient $client)
+    private function populateOptions($options, $message, GuzzleClient $client, $index = null)
     {
         $options = is_array($options) ? $options : [];
         $options['handler'] = $client->getConfig('handler');
         if (!isset($options['on_stats'])) {
-            $options['on_stats'] = $this->getCallableOnStats($message);
+            $options['on_stats'] = $this->getCallableOnStats($message, $index);
         }
         return $options;
     }

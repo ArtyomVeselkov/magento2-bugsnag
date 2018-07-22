@@ -70,4 +70,17 @@
 
     <preference for="Optimlight\Bugsnag\Model\Queue\Builder\ClientInterface" type="Optimlight\Bugsnag\Model\Queue\Builder\Client" />
 
+    <type name="Optimlight\Bugsnag\Model\Queue\ProcessorInterface">
+        <arguments>
+            <argument name="options" xsi:type="array">
+                <item name="limit" xsi:type="number">300</item>
+            </argument>
+            <argument name="callbacks" xsi:type="array">
+                <item name="on_stats" xsi:type="array"></item>
+                <item name="on_rejected" xsi:type="array"></item>
+                <item name="on_fulfilled" xsi:type="array"></item>
+            </argument>
+        </arguments>
+    </type>
+
 </config>

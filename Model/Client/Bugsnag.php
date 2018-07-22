@@ -3,7 +3,6 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Model\Client;
 
 use Optimlight\Bugsnag\Boot\{Runner, ExceptionHandler};

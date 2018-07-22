@@ -3,12 +3,11 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Boot;
 
 use Magento\Customer\Model\Session;
 use Optimlight\Bugsnag\Logger\Php as Logger;
-use Optimlight\Bugsnag\Helper\Common as Helper;
+use Optimlight\Bugsnag\Helper\{Common as Helper, ConfigReader as Config};
 
 /**
  * Class Runner
@@ -23,8 +22,14 @@ final class Runner
      * Holds content of env.php file.
      *
      * @var array|null
+     * @deprecated
      */
     private static $magentoConfiguration = null;
+
+    /**
+     * @var Config
+     */
+    private static $config;
 
     /**
      * Exceptions handler.
@@ -62,7 +67,7 @@ final class Runner
         static::$phpLogger = new Logger();
         try {
             // Get array from app/etc/env.php.
-            if (static::getEnvConfiguration()) {
+            if (static::loadConfiguration()) {
                 static::initHandler();
             }
         } catch (\Exception $exception) {
@@ -156,15 +161,10 @@ final class Runner
      * @return bool
      * @throws \Exception
      */
-    private static function getEnvConfiguration()
+    private static function loadConfiguration()
     {
-        $path = BP . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'etc' . DIRECTORY_SEPARATOR . 'env.php';
-        if (file_exists($path)) {
-            static::$magentoConfiguration = require $path;
-        } else {
-            throw new \Exception(sprintf('Env file "%s" doesn\'t exists.', $path));
-        }
-        return is_array(static::$magentoConfiguration);
+        static::$config = new Config();
+        return true == static::$config->get('active');
     }
 
     /**
