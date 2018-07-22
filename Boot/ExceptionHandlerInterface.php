@@ -3,7 +3,6 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Boot;
 
 use Optimlight\Bugsnag\Logger\Php as Logger;
@@ -19,31 +18,6 @@ use Magento\Framework\DataObject;
  */
 interface ExceptionHandlerInterface
 {
-    /**
-     * First level key for env.php file. Common key.
-     */
-    const CONFIG_KEY = 'opt_handler';
-
-    /**
-     * Second level key for env.php file.
-     */
-    const CONFIG_SUBKEY_EXCEPTIONS = 'exceptions';
-
-    /**
-     * Sub-key for exclusion rules.
-     */
-    const CONFIG_SUBKEY_EXCLUSION = 'exclude';
-
-    /**
-     * Sub-key to define if whole extension is enabled.
-     */
-    const CONFIG_SUBKEY_ACTIVE = 'active';
-
-    /**
-     * Sub-key for card that would be initialized during composer auto-loading (collecting modules via registration.php).
-     */
-    const CONFIG_SUBKEY_EARLY_BIRD = 'early_bird';
-
     /**
      * Common prefix of virtual types to look for registered cards.
      */

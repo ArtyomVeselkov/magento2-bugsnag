@@ -3,7 +3,6 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Logger;
 
 /**
@@ -16,7 +15,7 @@ interface PhpInterface
      * Default type of logging errors.
      * @see error_log for more information.
      */
-    const DEFAULT_LOG_TYPE = 3;
+    const DEFAULT_LOG_TYPE = 0;
 
     /**
      * Default location of destination logs writing.
@@ -24,7 +23,6 @@ interface PhpInterface
      */
     const DEFAULT_LOG_DESTINATION = 'var' . DIRECTORY_SEPARATOR . 'log' .
                                     DIRECTORY_SEPARATOR . 'bugsnag.log';
-
 
     /**
      * For logging exceptions.
@@ -34,4 +32,10 @@ interface PhpInterface
      * @param string $additionalMessage
      */
     public function catchException(\Exception $exception, $additionalMessage = '');
+
+    /**
+     * @param string $message
+     * @return void
+     */
+    public function debug($message);
 }

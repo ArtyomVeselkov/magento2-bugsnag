@@ -3,13 +3,12 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Boot;
 
 use Optimlight\Bugsnag\Logger\Php as Logger;
-use Optimlight\Bugsnag\Model\VirtualCard;
-use Optimlight\Bugsnag\Model\InterfaceVirtualCard;
+use Optimlight\Bugsnag\Model\{VirtualCard, InterfaceVirtualCard};
 use Optimlight\Bugsnag\Helper\VirtualClass;
+use Optimlight\Bugsnag\Helper\ConfigReader as Config;
 use Optimlight\Bugsnag\Model\Client\Bugsnag as BugsnagClient;
 use Optimlight\Bugsnag\Model\Resolver\Build\BuildInterface;
 use Magento\Framework\DataObject;
@@ -18,15 +17,6 @@ use Magento\Framework\DataObject;
  * Class ExceptionHandler
  * @package Optimlight\Bugsnag\Model
  */
-
-/**
- * @method getExceptions()
- * @method getExclude()
- * @method getActive()
- * @method getEarlyBird()
- * @method getLimit()
- */
-
 final class ExceptionHandler extends DataObject implements ExceptionHandlerInterface
 {
     /**
@@ -53,9 +43,9 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     /**
      * Extensions configuration read from env.php file.
      *
-     * @var array
+     * @var Config
      */
-    private $cachedConfig = [];
+    private $config;
 
     /**
      * Logger (not Monolog).
@@ -82,22 +72,15 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     /**
      * ExceptionHandler constructor.
      *
-     * @param array $config
+     * @param Config $config
      * @param array $data
      */
-    public function __construct(array $config, array $data = [])
+    public function __construct(Config $config, array $data = [])
     {
         $this->phpLogger = new Logger();
         parent::__construct($data);
         // Be patient and check all.
-        if (
-            isset($config[self::CONFIG_KEY]) &&
-            isset($config[self::CONFIG_KEY][self::CONFIG_SUBKEY_EXCEPTIONS]) &&
-            is_array($config[self::CONFIG_KEY][self::CONFIG_SUBKEY_EXCEPTIONS]) &&
-            count($config[self::CONFIG_KEY][self::CONFIG_SUBKEY_EXCEPTIONS])
-        ) {
-            $this->setData($config[self::CONFIG_KEY][self::CONFIG_SUBKEY_EXCEPTIONS]);
-        }
+        $this->config = $config;
         if ($this->isActive() && $this->canStart($config)) {
             $this->prepareCards();
             $this->prepareExclusions();
@@ -114,10 +97,20 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
      */
     public function canStart($config)
     {
-        if (!isset($config['db']['connection']['default']['password']) || !isset($config['db']['connection']['default']['dbname'])) {
+        // If DB credentials are not set.
+        if (
+            !$this->config->get('db/connection/default/password', false, true) ||
+            !$this->config->get('db/connection/default/dbname', false, true)
+        ) {
             return false;
         }
-        if (PHP_SAPI == 'cli' && isset($_SERVER) && isset($_SERVER['argv'][1]) && in_array($_SERVER['argv'][1], ['setup:install', 'sampledata:reset', 'setup:uninstall'])) {
+        // Disable logging for some CLI commands.
+        if (
+            PHP_SAPI == 'cli' &&
+            isset($_SERVER) &&
+            isset($_SERVER['argv'][1]) &&
+            in_array($_SERVER['argv'][1], ['setup:install', 'sampledata:reset', 'setup:uninstall'])
+        ) {
             return false;
         }
         return true;
@@ -161,7 +154,10 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     private function isLimitReached($errorNo, $errorStr, $errorFile, $errorLine)
     {
         $hash = md5($errorNo . '|' . $errorStr . '|' . $errorFile . '|' . $errorLine);
-        if (isset(static::$limitHash[$hash]) && $this->getLimit() > static::$limitHash[$hash]) {
+        if (
+            isset(static::$limitHash[$hash]) &&
+            $this->config->get(Config::CONFIG_SUBKEY_LIMIT, 100) < static::$limitHash[$hash]
+        ) {
             return true;
         } else {
             static::$limitHash[$hash] = (static::$limitHash[$hash] ?? 0) + 1;
@@ -343,7 +339,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
      */
     public function isActive()
     {
-        return $this->getActive();
+        return true == $this->config->get('active');
     }
 
     /**
@@ -355,7 +351,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     private function getEarlyBirdConfig()
     {
         $result = [];
-        $buffer = $this->getEarlyBird();
+        $buffer = $this->config->get(Config::CONFIG_SUBKEY_EARLY_BIRD, []);
         if (is_array($buffer)) {
             $result = $buffer;
         }
@@ -422,7 +418,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
         if (is_array($config) && !$this->birdFlewOut) {
             try {
                 $build = $config['build_class'] ?? false;
-                $buildConfig = $config['build_config'] ?? false;
+                $buildConfig = $config['build_options'] ?? false;
                 if (
                     $build && is_array($buildConfig) && class_exists($build) &&
                     is_a($build, BuildInterface::class, true)
@@ -458,7 +454,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
      */
     private function prepareExclusions()
     {
-        $exclusions = $this->getExclude();
+        $exclusions = $this->config->get(Config::CONFIG_SUBKEY_EXCLUSION, []);
         if (is_array($exclusions)) {
             $this->excludeFiles = $exclusions;
         }

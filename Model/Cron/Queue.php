@@ -54,4 +54,3 @@ class Queue
         $this->manager->dequeue($this->cardId, $this->options);
     }
 }
-

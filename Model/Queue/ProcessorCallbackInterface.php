@@ -13,7 +13,7 @@ interface ProcessorCallbackInterface
 {
     /**
      * @param array $arguments
-     * @return mixed
+     * @return void
      */
     public function execute(array $arguments = []);
 }

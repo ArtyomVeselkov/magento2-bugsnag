@@ -3,7 +3,6 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Model\Queue;
 
 use Optimlight\Bugsnag\Model\Queue\Builder\ClientInterface as BuilderInterface;
