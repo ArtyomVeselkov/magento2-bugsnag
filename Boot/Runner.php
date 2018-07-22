@@ -173,7 +173,25 @@ final class Runner
     private static function initHandler()
     {
         $config = static::getMagentoConfiguration();
+        static::deploy();
         static::$exceptionsHandler = new ExceptionHandler($config ?? []);
+    }
+
+    /**
+     * Run deploy commands. Full NS for classes/interfaces should be left "as is".
+     */
+    private static function deploy()
+    {
+        $map = [\Optimlight\Bugsnag\Model\Deploy\Autoloader::class];
+        foreach ($map as $class) {
+            if (\class_exists($class, true)) {
+                $instance = new $class();
+                if (is_a($instance, \Optimlight\Bugsnag\Model\Deploy\DeployInterface::class)) {
+                    /** @var \Optimlight\Bugsnag\Model\Deploy\DeployInterface $instance */
+                    $instance->deploy();
+                }
+            }
+        }
     }
 
     /**

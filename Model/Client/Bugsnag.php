@@ -6,14 +6,12 @@
 
 namespace Optimlight\Bugsnag\Model\Client;
 
-use Optimlight\Bugsnag\Boot\Runner;
-use Optimlight\Bugsnag\Boot\ExceptionHandler;
-use Magento\Framework\DataObject;
-use Bugsnag\Client;
-use Bugsnag\Configuration;
-use Bugsnag\ErrorTypes;
-use Bugsnag\Report;
+use Optimlight\Bugsnag\Boot\{Runner, ExceptionHandler};
+use Optimlight\Bugsnag\Helper\CachedFlag;
+use Bugsnag\{Client, Configuration, ErrorTypes, Report};
 use GuzzleHttp\ClientInterface as GuzzleClientInterface;
+use Magento\Framework\DataObject;
+use Composer\CaBundle;
 
 /**
  * Class Bugsnag
@@ -78,6 +76,11 @@ class Bugsnag extends AbstractClient
     protected $filterFields;
 
     /**
+     * @var CachedFlag
+     */
+    protected $cachedFlag;
+
+    /**
      * Bugsnag constructor.
      * @param array $configuration
      * @throws \Exception
@@ -89,6 +92,7 @@ class Bugsnag extends AbstractClient
         $notifySeverities = $configuration['severities'] ?? $this->severities;
         $filterFields = $configuration['filter_fields'] ?? '';
         $environment = $configuration['environment'] ?? 'development';
+        $this->cachedFlag = new CachedFlag();
         $this->initConfiguration($apiKey, $notifySeverities, $filterFields, $environment);
         $this->initBugsnag();
     }
@@ -270,8 +274,13 @@ class Bugsnag extends AbstractClient
         $revision = $this->rawConfig['build_revision'] ?? null;
         $provider = $this->rawConfig['build_provider'] ?? null;
         $builderName = $this->rawConfig['build_builder_name'] ?? null;
-        $this->client->getConfig()->setAppVersion($revision);
-        $this->client->build($repository, $revision, $provider, $builderName);
+        $key = "{$repository}|{$revision}|{$provider}|{$builderName}";
+        $previousBuild = $this->cachedFlag->getFlag('build_key');
+        if (!$previousBuild || $previousBuild != $key) {
+            $this->client->getConfig()->setAppVersion($revision);
+            $this->client->build($repository, $revision, $provider, $builderName);
+            $this->cachedFlag->setFlag('build_key', $key);
+        }
     }
 
 
