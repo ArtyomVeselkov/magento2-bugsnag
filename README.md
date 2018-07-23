@@ -186,9 +186,12 @@ return array (
 - [X] Auto-deploy include file (for file `setup/config/autoload/bugsnag.local.php`).
 - [X] Queue for messages.
 - [X] Send build info only once (cache).
+- [X] Get build info from env variables.
+- [X] Configuration for auto-deploy.
 - [ ] Finish readme document.
 - [ ] Encryption for stored records.
-- [ ] Get build info from env variables.
+- [ ] Support of Bugsnag's breadcrumbs.
+- [ ] Console command for test notification. 
 - [ ] Unit tests.
 
 ## Notes

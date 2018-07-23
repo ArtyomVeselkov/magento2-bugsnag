@@ -19,14 +19,6 @@ use Optimlight\Bugsnag\Helper\{Common as Helper, ConfigReader as Config};
 final class Runner
 {
     /**
-     * Holds content of env.php file.
-     *
-     * @var array|null
-     * @deprecated
-     */
-    private static $magentoConfiguration = null;
-
-    /**
      * @var Config
      */
     private static $config;
@@ -172,9 +164,8 @@ final class Runner
      */
     private static function initHandler()
     {
-        $config = static::getMagentoConfiguration();
         static::deploy();
-        static::$exceptionsHandler = new ExceptionHandler($config ?? []);
+        static::$exceptionsHandler = new ExceptionHandler(static::$config);
     }
 
     /**
@@ -182,25 +173,17 @@ final class Runner
      */
     private static function deploy()
     {
-        $map = [\Optimlight\Bugsnag\Model\Deploy\Autoloader::class];
-        foreach ($map as $class) {
-            if (\class_exists($class, true)) {
-                $instance = new $class();
-                if (is_a($instance, \Optimlight\Bugsnag\Model\Deploy\DeployInterface::class)) {
-                    /** @var \Optimlight\Bugsnag\Model\Deploy\DeployInterface $instance */
-                    $instance->deploy();
+        if (static::$config->get(Config::CONFIG_SUBKEY_AUTO_DEPLOY, true)) {
+            $map = [\Optimlight\Bugsnag\Model\Deploy\Autoloader::class];
+            foreach ($map as $class) {
+                if (\class_exists($class, true)) {
+                    $instance = new $class();
+                    if (is_a($instance, \Optimlight\Bugsnag\Model\Deploy\DeployInterface::class)) {
+                        /** @var \Optimlight\Bugsnag\Model\Deploy\DeployInterface $instance */
+                        $instance->deploy();
+                    }
                 }
             }
         }
-    }
-
-    /**
-     * Get loaded array from env.php file.
-     *
-     * @return array
-     */
-    public static function getMagentoConfiguration()
-    {
-        return static::$magentoConfiguration;
     }
 }

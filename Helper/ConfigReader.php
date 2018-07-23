@@ -43,9 +43,15 @@ final class ConfigReader
     const CONFIG_SUBKEY_EARLY_BIRD = 'early_bird';
 
     /**
-     * Sub-key for internal logging.
+     * Sub-key for the file path for internal logging.
      */
     const CONFIG_SUBKEY_DEFAULT_LOG_PATH = 'log_path';
+
+    /**
+     * Sub-key for for bool option: should auto-deploy be executed on each request/call (caching mechanism is used).
+     * For more info @see \Optimlight\Bugsnag\Boot\Runner::deploy().
+     */
+    const CONFIG_SUBKEY_AUTO_DEPLOY = 'auto_deploy';
 
     /**
      * @var array
