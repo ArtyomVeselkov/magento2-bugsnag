@@ -190,6 +190,8 @@ return array (
 - [X] Configuration for auto-deploy.
 - [ ] Finish readme document.
 - [ ] Encryption for stored records.
+- [ ] AliasedConfig (for `key:` configs).
+- [ ] Pipe mechanism for request converting (incl. encryption, compressing...) with configs.
 - [ ] Support of Bugsnag's breadcrumbs.
 - [ ] Console command for test notification. 
 - [ ] Unit tests.
