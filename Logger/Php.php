@@ -54,8 +54,8 @@ class Php implements PhpInterface
      */
     public function __construct($errorLogType = null, $errorLogDestination = null)
     {
-        $this->overwriteDefaults();
         $this->config = new Config();
+        $this->overwriteDefaults();
         $this->errorLogType = $errorLogType ?? $this->errorLogType;
         $this->errorLogDestination = $errorLogDestination ?? $this->errorLogDestination;
         $this->debug = 1 < $this->config->get('debug', 0);

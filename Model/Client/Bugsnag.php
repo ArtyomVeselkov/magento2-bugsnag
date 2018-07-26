@@ -275,7 +275,7 @@ class Bugsnag extends AbstractClient
         $builderName = $this->rawConfig['build_builder_name'] ?? null;
         $key = "{$repository}|{$revision}|{$provider}|{$builderName}";
         $previousBuild = $this->cachedFlag->getFlag('build_key');
-        if (!$previousBuild || $previousBuild != $key) {
+        if ($revision && (!$previousBuild || $previousBuild != $key)) {
             $this->client->getConfig()->setAppVersion($revision);
             $this->client->build($repository, $revision, $provider, $builderName);
             $this->cachedFlag->setFlag('build_key', $key);
