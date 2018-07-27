@@ -4,7 +4,7 @@
     "license": "MIT",
     "require": {
         "php": ">=5.4.0",
-        "magento/framework": "^101.0.0",
+        "magento/framework": "^100.0 || ^101.0",
         "ext-curl": "*",
         "ext-dom": "*",
         "ext-hash": "*",
