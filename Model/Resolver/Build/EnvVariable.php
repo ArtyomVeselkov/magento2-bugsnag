@@ -9,6 +9,18 @@ namespace Optimlight\Bugsnag\Model\Resolver\Build;
 /**
  * Class EnvVariable
  * @package Optimlight\Bugsnag\Model\Resolver\Build
+ *
+ *
+ * Example of usage in `env.php`:
+ *
+ * 'build_class' => '\\Optimlight\\Bugsnag\\Model\\Resolver\\Build\\EnvVariable',
+ * 'build_options' =>
+ *     array (
+ *         'path_version' => 'build_number',
+ *         'destination' => array(
+ *              'build_number' => 'ENV_BUILD_NUMBER'
+ *          ),
+ *     ),
  */
 class EnvVariable extends BuildAbstract
 {
@@ -19,6 +31,8 @@ class EnvVariable extends BuildAbstract
     public function __construct(
         array $data = []
     ) {
+        $data[self::DESTINATION_TYPE] = 'file';
+        $data[self::NESTED_PATH_INFO_KEY] = false;
         parent::__construct($data);
     }
 
@@ -29,7 +43,13 @@ class EnvVariable extends BuildAbstract
      */
     public function resolveData($destination, $nestedPath)
     {
-        return getenv($destination, true) ?? getenv($destination);
+        $build = [];
+        if (is_array($destination)) {
+            foreach ($destination as $key => $envKey) {
+                $build[$key] = getenv($envKey, true) ?? getenv($envKey);
+            }
+        }
+        return $build;
     }
 
     /**
