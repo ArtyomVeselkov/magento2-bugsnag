@@ -17,18 +17,11 @@ use Magento\Framework\App\ObjectManager as ObjectManager;
 class Common extends AbstractHelper
 {
     /**
-     * @var ScopeConfigInterface|null
-     */
-    protected $scopeConfig = null;
-
-    /**
      * Common constructor.
-     * @param ScopeConfigInterface $scopeConfig
      * @param Context $context
      */
-    public function __construct(ScopeConfigInterface $scopeConfig, Context $context)
+    public function __construct(Context $context)
     {
-        $this->scopeConfig = $scopeConfig;
         parent::__construct($context);
     }
 
