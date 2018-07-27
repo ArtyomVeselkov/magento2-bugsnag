@@ -46,7 +46,7 @@ class BeforeCommandList
     {
         if (static::$enabled) {
             $handler = static::$handler;
-            if ($handler->isActive()) {
+            if ($handler && $handler->isActive()) {
                 if (0 < static::$calledTimes--) {
                     $handler->prepareCards();
                     $handler->registerAllHandlers();

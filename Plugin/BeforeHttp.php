@@ -44,7 +44,7 @@ class BeforeHttp
     {
         if (static::$enabled) {
             $handler = static::$handler;
-            if ($handler->isActive()) {
+            if ($handler && $handler->isActive()) {
                 $handler->prepareCards();
                 $handler->registerAllHandlers();
             }

@@ -115,8 +115,10 @@ class Manager implements ManagerInterface
     private function getCards($reload = false)
     {
         if (empty($this->cards) || $reload) {
-            $this->handler->prepareCards();
-            $this->cards = $this->handler->getCards();
+            if ($this->handler) {
+                $this->handler->prepareCards();
+                $this->cards = $this->handler->getCards();
+            }
         }
         return $this->cards;
     }

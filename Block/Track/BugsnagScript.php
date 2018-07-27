@@ -39,6 +39,9 @@ class BugsnagScript implements InterfaceScript
         $result = '';
         $secondary = false;
         $apikey = false;
+        if (!$this->handler) {
+            return $result;
+        }
         $cards = $this->handler->getCards();
         foreach ($cards as $card) {
             if (InterfaceVirtualCard::TYPE_JS === $card->getType()) {
