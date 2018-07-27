@@ -46,7 +46,8 @@ abstract class BuildAbstract implements BuildInterface
      */
     public function getBuildNumber()
     {
-        return $this->build[$this->data->getData(static::NESTED_PATH_VERSION_KEY)] ?? '';
+        $value = $this->build[$this->data->getData(static::NESTED_PATH_VERSION_KEY)] ?? '';
+        return is_string($value) ? $value : '';
     }
 
     /**
