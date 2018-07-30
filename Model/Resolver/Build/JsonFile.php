@@ -26,7 +26,6 @@ class JsonFile extends BuildAbstract
     /**
      * JsonFile constructor.
      * @param FileFactory $readFactory
-     * @param Json $json
      * @param array $data
      */
     public function __construct(
@@ -34,7 +33,6 @@ class JsonFile extends BuildAbstract
         array $data = []
     ) {
         parent::__construct($data);
-        $this->json = $json;
         $this->readFactory = $readFactory;
     }
 
@@ -76,7 +74,8 @@ class JsonFile extends BuildAbstract
         if ($content) {
             $json = Json::decode($content, Json::TYPE_ARRAY);
             $buffer = new DataObject($json);
-            $result = $buffer->getData($this->data->getData(static::NESTED_PATH_INFO_KEY));
+            $key = $this->data->getData(static::NESTED_PATH_INFO_KEY);
+            $result = $key ? $buffer->getData($key) : $buffer->getData();
         }
         return $result;
     }
