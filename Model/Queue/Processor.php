@@ -39,18 +39,19 @@ class Processor implements ProcessorInterface
 
     /**
      * Processor constructor.
-     * @param GuzzleClient $client
+     *
      * @param RequestSerializer $requestSerializer
      * @param array $options
+     * @param array $guzzleOptions
      * @param array $callbacks
      */
     public function __construct(
-        GuzzleClient $client,
         RequestSerializer $requestSerializer,
         array $options = [],
+        array $guzzleOptions = [],
         array $callbacks = []
     ) {
-        $this->guzzle = $client;
+        $this->guzzle = new GuzzleClient($guzzleOptions);
         $this->requestSerializer = $requestSerializer;
         $this->options = $this->getDefaultOptions() + $options;
         $this->callbacks = $callbacks;
