@@ -80,6 +80,11 @@ class Bugsnag extends AbstractClient
     protected $cachedFlag;
 
     /**
+     * @var bool
+     */
+    protected $ready = false;
+
+    /**
      * Bugsnag constructor.
      * @param array $configuration
      * @throws \Exception
@@ -93,7 +98,15 @@ class Bugsnag extends AbstractClient
         $environment = $configuration['environment'] ?? 'development';
         $this->cachedFlag = new CachedFlag();
         $this->initConfiguration($apiKey, $notifySeverities, $filterFields, $environment);
-        $this->initBugsnag();
+        $this->ready = $this->initBugsnag();
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsReady()
+    {
+        return $this->ready;
     }
 
     /**
@@ -171,35 +184,42 @@ class Bugsnag extends AbstractClient
     }
 
     /**
-     * @return Client|null
+     * @return bool
      * @throws \Exception
      */
     protected function initBugsnag()
     {
+        $ready = false;
         if (!class_exists('Bugsnag\\Client')) {
             throw new \Exception('Error: Couldn\'t activate Bugsnag Error Monitoring due to missing Bugsnag PHP library!');
         }
         // Activate the BugSnag client.
         if (!empty($this->apiKey)) {
-            // We use our make method instead of original.
-            // $this->client = Client::make($this->apiKey);
-            $this->client = $this->makeClient($this->apiKey, null, true);
-            $this->client->getConfig()->setReleaseStage($this->releaseStage());
-            // This option shouldn't be really used until correct value is populated. Specifing wrong value can prevent
-            // errors from being tracked by Bugsnag.
-            // $this->client->getConfig()->setNotifier($this->identification);
-            $filters = $this->filterFields();
-            if (is_array($filters)) {
-                $this->client->getConfig()->setFilters($filters);
+            try {
+                // We use our make method instead of original.
+                // $this->client = Client::make($this->apiKey);
+                $this->client = $this->makeClient($this->apiKey, null, true);
+                $this->client->getConfig()->setReleaseStage($this->releaseStage());
+                // This option shouldn't be really used until correct value is populated. Specifing wrong value can prevent
+                // errors from being tracked by Bugsnag.
+                // $this->client->getConfig()->setNotifier($this->identification);
+                $filters = $this->filterFields();
+                if (is_array($filters)) {
+                    $this->client->getConfig()->setFilters($filters);
+                }
+                $this->client->getConfig()->setErrorReportingLevel($this->errorReportingLevel());
+                $this->client->getConfig()->setAppType(self::APP_TYPE);
+                // Do not set handler here as in case of "early bird" Magento will overwrite handler.
+                // set_error_handler([$this->client, 'errorHandler']);
+                // set_exception_handler([$this->client, 'exceptionHandler']);
+                $this->setBuild();
+                $ready = is_object($this->client);
+            } catch (\Exception $exception) {
+                $this->phpLogger->catchException($exception);
+
             }
-            $this->client->getConfig()->setErrorReportingLevel($this->errorReportingLevel());
-            $this->client->getConfig()->setAppType(self::APP_TYPE);
-            // Do not set handler here as in case of "early bird" Magento will overwrite handler.
-            // set_error_handler([$this->client, 'errorHandler']);
-            // set_exception_handler([$this->client, 'exceptionHandler']);
-            $this->setBuild();
         }
-        return $this->client;
+        return $ready;
     }
 
     /**

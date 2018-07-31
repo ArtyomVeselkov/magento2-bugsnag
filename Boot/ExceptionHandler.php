@@ -62,6 +62,11 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
     /**
      * @var bool
      */
+    public $disabled = false;
+
+    /**
+     * @var bool
+     */
     private static $shutdownFlag = false;
 
     /**
@@ -83,8 +88,10 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
         $this->config = $config;
         if ($this->isActive() && $this->canStart($config)) {
             $this->prepareCards();
-            $this->prepareExclusions();
-            $this->registerAllHandlers();
+            if (!$this->disabled) {
+                $this->prepareExclusions();
+                $this->registerAllHandlers();
+            }
         }
     }
 
@@ -109,7 +116,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
             PHP_SAPI == 'cli' &&
             isset($_SERVER) &&
             isset($_SERVER['argv'][1]) &&
-            in_array($_SERVER['argv'][1], ['setup:install', 'sampledata:reset', 'setup:uninstall'])
+            in_array($_SERVER['argv'][1], ['setup:install', 'setup:upgrade', 'sampledata:reset', 'setup:uninstall'])
         ) {
             return false;
         }
@@ -339,7 +346,7 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
      */
     public function isActive()
     {
-        return true == $this->config->get('active');
+        return (true == $this->config->get('active')) && !$this->disabled;
     }
 
     /**
@@ -440,8 +447,12 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
                     $config
                 );
                 $client = new BugsnagClient($card->getConfig());
-                $card->setClient($client);
-                $this->addCard($card);
+                if ($client->getIsReady()) {
+                    $card->setClient($client);
+                    $this->addCard($card);
+                } else {
+                    $this->disabled = true;
+                }
                 $this->birdFlewOut = true;
             } catch (\Exception $exception) {
                 $this->phpLogger->catchException($exception, 'Unable to initialize Bugsnag EarlyBird card.');
