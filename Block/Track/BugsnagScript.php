@@ -3,7 +3,6 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Block\Track;
 
 use Optimlight\Bugsnag\Boot\{Runner, ExceptionHandler};
@@ -40,6 +39,9 @@ class BugsnagScript implements InterfaceScript
         $result = '';
         $secondary = false;
         $apikey = false;
+        if (!$this->handler) {
+            return $result;
+        }
         $cards = $this->handler->getCards();
         foreach ($cards as $card) {
             if (InterfaceVirtualCard::TYPE_JS === $card->getType()) {

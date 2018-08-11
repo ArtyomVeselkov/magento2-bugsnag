@@ -12,7 +12,7 @@ use Optimlight\Bugsnag\Boot\Runner;
 
 try {
     $handler = Runner::getExceptionsHandler();
-    if ($handler->isActive()) {
+    if ($handler && $handler->isActive()) {
         $handler->prepareCards();
         $handler->registerAllHandlers();
     }

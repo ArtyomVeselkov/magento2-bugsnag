@@ -3,11 +3,9 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Plugin;
 
-use Optimlight\Bugsnag\Boot\ExceptionHandler;
-use Optimlight\Bugsnag\Boot\Runner;
+use Optimlight\Bugsnag\Boot\{ExceptionHandler, Runner};
 use Magento\Framework\Console\CommandListInterface;
 
 /**
@@ -35,7 +33,8 @@ class BeforeCommandList
      * BeforeHttp constructor.
      *
      */
-    public function __construct() {
+    public function __construct()
+    {
         static::$handler = Runner::getExceptionsHandler();
         Runner::changeReadyState(true);
     }
@@ -47,7 +46,7 @@ class BeforeCommandList
     {
         if (static::$enabled) {
             $handler = static::$handler;
-            if ($handler->isActive()) {
+            if ($handler && $handler->isActive()) {
                 if (0 < static::$calledTimes--) {
                     $handler->prepareCards();
                     $handler->registerAllHandlers();

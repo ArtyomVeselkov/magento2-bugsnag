@@ -10,7 +10,7 @@ use Magento\Framework\DataObject;
 use Magento\Framework\Filesystem\DriverPool;
 use Magento\Framework\Filesystem\File\Read as File;
 use Magento\Framework\Filesystem\File\ReadFactory as FileFactory;
-use Magento\Framework\Serialize\Serializer\Json;
+use Zend\Json\Json;
 
 /**
  * Class JsonFile
@@ -24,23 +24,15 @@ class JsonFile extends BuildAbstract
     private $readFactory;
 
     /**
-     * @var Json
-     */
-    private $json;
-
-    /**
      * JsonFile constructor.
      * @param FileFactory $readFactory
-     * @param Json $json
      * @param array $data
      */
     public function __construct(
         FileFactory $readFactory,
-        Json $json,
         array $data = []
     ) {
         parent::__construct($data);
-        $this->json = $json;
         $this->readFactory = $readFactory;
     }
 
@@ -80,9 +72,10 @@ class JsonFile extends BuildAbstract
         }
         // In case of successful reading - decode data.
         if ($content) {
-            $json = $this->json->unserialize($content);
+            $json = Json::decode($content, Json::TYPE_ARRAY);
             $buffer = new DataObject($json);
-            $result = $buffer->getData($this->data->getData(static::NESTED_PATH_INFO_KEY));
+            $key = $this->data->getData(static::NESTED_PATH_INFO_KEY);
+            $result = $key ? $buffer->getData($key) : $buffer->getData();
         }
         return $result;
     }
@@ -93,7 +86,6 @@ class JsonFile extends BuildAbstract
      */
     public static function getInstance(...$arguments)
     {
-        $arguments[] = new Json();
         $arguments[] = new FileFactory(new DriverPool());
         rsort($arguments);
         return new static(...$arguments);

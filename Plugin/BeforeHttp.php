@@ -3,7 +3,6 @@
  *  Copyright © 2018 Optimlight. All rights reserved.
  *  See LICENSE.txt for license details.
  */
-
 namespace Optimlight\Bugsnag\Plugin;
 
 use Optimlight\Bugsnag\Boot\ExceptionHandler;
@@ -45,7 +44,7 @@ class BeforeHttp
     {
         if (static::$enabled) {
             $handler = static::$handler;
-            if ($handler->isActive()) {
+            if ($handler && $handler->isActive()) {
                 $handler->prepareCards();
                 $handler->registerAllHandlers();
             }
