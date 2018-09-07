@@ -8,6 +8,8 @@ namespace Optimlight\Bugsnag\Helper;
 /**
  * Class ConfigReader
  * @package Optimlight\Bugsnag\Helper
+ *
+ * Probably eventually can be replaced with @see \Magento\Framework\App\DeploymentConfig.
  */
 final class ConfigReader
 {
@@ -73,7 +75,7 @@ final class ConfigReader
     {
         if (empty(static::$config)) {
             $path = $this->getPath();
-            if (file_exists($path)) {
+            if (\file_exists($path)) {
                 static::$config = require $path;
             } else {
                 static::$config = [];

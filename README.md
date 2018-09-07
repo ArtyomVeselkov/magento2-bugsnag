@@ -193,7 +193,9 @@ return array (
 - [ ] AliasedConfig (for `key:` configs).
 - [ ] Pipe mechanism for request converting (incl. encryption, compressing...) with configs.
 - [ ] Support of Bugsnag's breadcrumbs.
-- [ ] Console command for test notification. 
+- [ ] Console command for test notification.
+- [ ] Add check of presence of required classes from 3rd party modules (some of them; in case of being installed in the 
+      `app/code`).
 - [ ] Unit tests.
 
 ## Notes
