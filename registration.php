@@ -13,6 +13,6 @@ namespace Optimlight\Bugsnag;
 
 try {
     \Optimlight\Bugsnag\Boot\Runner::init();
-} catch (\Exception $exception) {
+} catch (\Throwable $exception) {
     error_log('Unable to initialize Bugsnag runner due to exception: ' . $exception->getMessage());
 }
