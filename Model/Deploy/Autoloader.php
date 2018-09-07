@@ -31,7 +31,7 @@ class Autoloader extends AbstractDeploy
                     // What is better here: $bp or $mp?
                     // $to = $bp /* strip '../../../' */. $pair[1];
                     $to = $mp . $pair[1];
-                    if (!file_exists($to) && file_exists($from)) {
+                    if (!\file_exists($to) && \file_exists($from)) {
                         @copy($from, $to);
                     }
                 }
