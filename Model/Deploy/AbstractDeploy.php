@@ -79,6 +79,80 @@ abstract class AbstractDeploy implements DeployInterface
         $this->cachedFlag->setFlag('deploy_' . static::class, $this->currentTime);
     }
 
+    /**
+     * @return bool|string
+     */
+    private function getCurrentDirectory()
+    {
+        $path = dirname(__FILE__);
+        return $path ? realpath($path) : '';
+    }
+
+    /**
+     * @return bool
+     */
+    private function isAppCodePath()
+    {
+        $path = $this->getCurrentDirectory();
+        return 0 === strpos($path, BP . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'code');
+    }
+
+    /**
+     * @return object
+     */
+    private function getDefaultPackage()
+    {
+        $path = $this->getCurrentDirectory();
+        $path .= $path ? DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR : '';
+        $path .= 'composer.json';
+        $result = (new class {
+            /**
+             * @var array
+             */
+            private $data = [];
+
+            /**
+             * @param string $key
+             * @return mixed|null
+             */
+            public function __get($key)
+            {
+                return $this->data[$key] ?? null;
+            }
+
+            /**
+             * @param string $name
+             * @param array $arguments
+             * @return null
+             */
+            public function __call($name, $arguments)
+            {
+                $key = false;
+                if (0 === strpos($name, 'get')) {
+                    $key = strtolower(substr($name, 3));
+                }
+                return $key ? $this->{$key} : null;
+            }
+
+            /**
+             * @param array $data
+             */
+            public function setData($data)
+            {
+                $this->data = $data;
+            }
+        });
+        if ($path && \file_exists($path)) {
+            $buffer = \file_get_contents($path);
+            if ($buffer) {
+                $array = \json_decode($buffer, true);
+                if (is_array($array)) {
+                    $result->setData($array);
+                }
+            }
+        }
+        return $result;
+    }
 
     /**
      * @return CompletePackageInterface
@@ -93,6 +167,10 @@ abstract class AbstractDeploy implements DeployInterface
                 $this->package = $composer->getRepositoryManager()
                     ->getLocalRepository()
                     ->findPackage('optimlight/magento2-bugsnag', '*');
+                // If module is installed into app/code directory.
+                if (!$this->package && $this->isAppCodePath()) {
+                    $this->package = $this->getDefaultPackage();
+                }
             } catch (\Exception $exception) {
                 $this->logger->catchException($exception);
             }

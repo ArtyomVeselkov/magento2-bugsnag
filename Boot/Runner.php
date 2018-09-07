@@ -113,7 +113,7 @@ final class Runner
                 $om = Helper::getObjectManager();
                 // We cannot use \Magento\Framework\App\State as it will throw exception in case of not set areaCode.
                 /** @var \Magento\Framework\Config\ScopeInterface $scope */
-                $scope = $om->get('Magento\Framework\Config\ScopeInterface');;
+                $scope = $om->get(\Magento\Framework\Config\ScopeInterface::class);
                 $value = $scope->getCurrentScope();
                 return !(!$value || 'primary' === $value);
             } catch (\Exception $exception) {

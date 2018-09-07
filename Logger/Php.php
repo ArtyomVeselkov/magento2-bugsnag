@@ -48,6 +48,11 @@ class Php implements PhpInterface
     protected static $syslog = false;
 
     /**
+     * @var string
+     */
+    protected static $dateFormat = 'Y-m-d H:i:s';
+
+    /**
      * Php constructor.
      * @param int $errorLogType
      * @param string $errorLogDestination
@@ -68,6 +73,10 @@ class Php implements PhpInterface
     {
         $path = $this->config->get(Config::CONFIG_SUBKEY_DEFAULT_LOG_PATH, false);
         if (is_string($path) && strlen($path)) {
+            $path = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, trim($path));
+            if (0 !== strpos($path, DIRECTORY_SEPARATOR)) {
+                $path = BP . DIRECTORY_SEPARATOR . $path;
+            }
             $this->errorLogDestination = $path;
             $this->errorLogType = 3;
         }
@@ -98,7 +107,8 @@ class Php implements PhpInterface
             $additionalMessage = sprintf('[%s] ', $additionalMessage);
         }
         try {
-            error_log($additionalMessage . $exception->getMessage(), $this->errorLogType, $this->errorLogDestination);
+            $message = date(static::$dateFormat) . ' ' . $additionalMessage . $exception->getMessage() . PHP_EOL;
+            error_log($message, $this->errorLogType, $this->errorLogDestination);
         } catch (\Exception $exception) {
             if (0 != $this->errorLogType) {
                 error_log($additionalMessage . $exception->getMessage(), 0);

@@ -17,8 +17,8 @@ class CachedFlag
     private function getPath()
     {
         $path = BP . DIRECTORY_SEPARATOR . 'var' . DIRECTORY_SEPARATOR . 'bugsnag-flags.json';
-        if (!file_exists($path)) {
-            return touch($path) ? $path : false;
+        if (!\file_exists($path)) {
+            return \touch($path) ? $path : false;
         } else {
             return $path;
         }
@@ -33,7 +33,7 @@ class CachedFlag
     {
         $result = $default;
         if ($path = $this->getPath()) {
-            $content = file_get_contents($path);
+            $content = \file_get_contents($path);
             if ($content) {
                 try {
                     $content = \json_decode($content, true);
@@ -53,14 +53,14 @@ class CachedFlag
     public function setFlag($flag, $value = true)
     {
         if ($path = $this->getPath()) {
-            $content = file_get_contents($path);
+            $content = \file_get_contents($path);
             try {
                 $content = $content ? \json_decode($content, true) : [];
             } catch (\Exception $exception) {
                 // We don't need to perform any actions here.
             }
             $content[$flag] = $value;
-            file_put_contents($path, \json_encode($content));
+            \file_put_contents($path, \json_encode($content));
         }
     }
 }

@@ -408,7 +408,9 @@ final class ExceptionHandler extends DataObject implements ExceptionHandlerInter
                 $cards = $helper->filterVirtualTypes(self::VIRTUAL_CARD_TYPE_PREFIX);
                 $helper->initVirtualTypes($cards, []);
                 foreach ($cards as $card) {
-                    $this->addCard($card);
+                    if ($card) {
+                        $this->addCard($card);
+                    }
                 }
             }
         } catch (\Exception $exception) {
